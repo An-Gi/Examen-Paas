@@ -1,0 +1,55 @@
+# Configuración de la CA raíz del examen — Estudiante B (Fase 1)
+# Se usa desde la carpeta ca/:  openssl ca -config openssl-ca.cnf ...
+# TODO(B): revisar cada valor y explicarlo en la documentación §4.
+
+[ ca ]
+default_ca = CA_paas
+
+[ CA_paas ]
+dir             = .
+certs           = $dir/certs
+new_certs_dir   = $dir/newcerts
+database        = $dir/index.txt
+serial          = $dir/serial
+private_key     = $dir/private/ca.key
+certificate     = $dir/certs/ca.crt
+default_md      = sha256
+# 397 días: límite que aceptan todos los navegadores para certificados de servidor
+default_days    = 397
+policy          = politica_flexible
+# copia las extensiones del CSR (así llega el SAN); ver la pregunta de defensa en README
+copy_extensions = copy
+unique_subject  = no
+
+[ politica_flexible ]
+countryName            = optional
+stateOrProvinceName    = optional
+organizationName       = optional
+organizationalUnitName = optional
+commonName             = supplied
+
+# --- Certificado raíz -------------------------------------------------------
+[ req ]
+default_bits       = 4096
+prompt             = no
+distinguished_name = dn_ca
+x509_extensions    = ext_ca
+
+[ dn_ca ]
+C  = CR
+O  = Examen PaaS II-2026
+CN = Examen PaaS Root CA
+
+[ ext_ca ]
+basicConstraints       = critical, CA:true
+keyUsage               = critical, keyCertSign, cRLSign
+subjectKeyIdentifier   = hash
+authorityKeyIdentifier = keyid:always, issuer
+
+# --- Certificados de servidor firmados por la CA -------------------------------
+[ ext_servidor ]
+basicConstraints       = CA:false
+keyUsage               = critical, digitalSignature, keyEncipherment
+extendedKeyUsage       = serverAuth
+subjectKeyIdentifier   = hash
+authorityKeyIdentifier = keyid, issuer

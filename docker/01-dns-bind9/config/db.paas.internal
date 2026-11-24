@@ -1,0 +1,31 @@
+; Zona directa paas.internal — Estudiante A (Fase 3). Fuente de nombres: docs/convenciones.md
+; Incrementar el serial (AAAAMMDDNN) en CADA cambio.
+$TTL 300
+@   IN  SOA ns1.paas.internal. admin.paas.internal. (
+            2026112401 ; serial
+            3600       ; refresh
+            900        ; retry
+            604800     ; expire
+            300 )      ; TTL negativo
+    IN  NS  ns1.paas.internal.
+    IN  MX  10 mail.paas.internal.
+
+; --- Nodos ---
+anfitrion   IN  A      10.10.10.1
+db01        IN  A      10.10.10.10
+web01       IN  A      10.10.10.20
+docker01    IN  A      10.10.10.30
+k8s01       IN  A      10.10.10.40
+
+; --- Servicios ---
+ns1         IN  A      10.10.10.30
+www         IN  CNAME  web01
+cms-k8s     IN  A      10.10.10.40
+ldap        IN  CNAME  docker01
+mail        IN  A      10.10.10.30
+webmail     IN  CNAME  docker01
+cloud       IN  CNAME  docker01
+ftp         IN  CNAME  docker01
+smb         IN  CNAME  docker01
+grafana     IN  CNAME  docker01
+kuma        IN  CNAME  docker01

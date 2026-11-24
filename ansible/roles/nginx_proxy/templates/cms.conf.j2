@@ -1,0 +1,18 @@
+# {{ ansible_managed }}
+# Reverse proxy público del CMS — Estudiante A (Fase 5)
+server {
+    listen 80;
+    server_name {{ cms_fqdn }};
+
+    location / {
+        # web01 por el túnel VPN (IP fija por client-config-dir)
+        proxy_pass http://{{ web01_ip_vpn }};
+        proxy_set_header Host              $host;
+        proxy_set_header X-Real-IP         $remote_addr;
+        proxy_set_header X-Forwarded-For   $proxy_add_x_forwarded_for;
+        # WordPress usa esta cabecera para armar URLs https (WP_HOME dinámico, ver nativo/README.md)
+        proxy_set_header X-Forwarded-Proto $scheme;
+    }
+}
+# TODO(A): certbot agrega el bloque 443. Si OpenVPN usa el plan B (TCP 443 + port-share),
+#          Nginx debe escuchar en otro puerto interno; documentar la decisión.

@@ -1,0 +1,11 @@
+; Zona inversa 10.10.10.0/24 — Estudiante A (Fase 3)
+$TTL 300
+@   IN  SOA ns1.paas.internal. admin.paas.internal. (
+            2026112401 3600 900 604800 300 )
+    IN  NS  ns1.paas.internal.
+
+1   IN  PTR anfitrion.paas.internal.
+10  IN  PTR db01.paas.internal.
+20  IN  PTR web01.paas.internal.
+30  IN  PTR docker01.paas.internal.
+40  IN  PTR k8s01.paas.internal.

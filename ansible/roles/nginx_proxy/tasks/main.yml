@@ -1,0 +1,14 @@
+# Rol nginx_proxy — Estudiante A (Fase 5)
+# cms.<dominio> (IP elástica) → Nginx en EC2 → túnel VPN → web01 (10.8.0.20)
+---
+- name: "TODO(A): el rol nginx_proxy todavía no está implementado"
+  ansible.builtin.debug:
+    msg: "Proxy para {{ cms_fqdn }} hacia http://{{ web01_ip_vpn }}"
+
+# TODO(A) 1. apt: nginx (y certbot + python3-certbot-nginx si nginx_proxy_certbot)
+# TODO(A) 2. template cms.conf.j2 -> /etc/nginx/sites-available/cms.conf; enlace en sites-enabled;
+#            quitar default (notify: recargar nginx)
+# TODO(A) 3. nginx -t antes de recargar (validate: en el módulo template)
+# TODO(A) 4. Si nginx_proxy_certbot: certbot --nginx -d {{ cms_fqdn }} --non-interactive --agree-tos
+#            -m {{ nginx_proxy_email }}  (creates: /etc/letsencrypt/live/{{ cms_fqdn }})
+# TODO(A) 5. Verificar desde fuera: curl -I http://{{ cms_fqdn }}

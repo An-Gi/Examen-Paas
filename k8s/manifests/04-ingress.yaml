@@ -1,0 +1,21 @@
+# Ingress del CMS (Traefik, incluido en k3s) — Estudiante B (Fase 4)
+# Nombre resuelto por BIND9 (docker/01-dns-bind9): cms-k8s.paas.internal -> 10.10.10.40
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: wordpress
+  namespace: cms
+spec:
+  ingressClassName: traefik
+  rules:
+    - host: cms-k8s.paas.internal
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: wordpress
+                port:
+                  number: 80
+  # TODO(B): opcional, tls con un certificado de nuestra CA (Secret tipo kubernetes.io/tls)

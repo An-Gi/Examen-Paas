@@ -1,0 +1,21 @@
+# Servicio 1/6 · DNS (BIND9) — Responsable: Estudiante A (Fase 3)
+# Demo:  dig @10.10.10.30 web01.paas.internal +short     -> 10.10.10.20
+#        dig @10.10.10.30 -x 10.10.10.20 +short          -> web01.paas.internal.
+#        dig @10.10.10.30 paas.internal MX +short        -> 10 mail.paas.internal.
+# systemd-resolved ocupa 127.0.0.53:53 en Ubuntu: por eso se publica solo en la IP de la LAN.
+services:
+  bind9:
+    image: internetsystemsconsortium/bind9:9.20   # TODO(A): confirmar el tag vigente
+    container_name: bind9
+    restart: unless-stopped
+    environment:
+      TZ: ${TZ:-America/Costa_Rica}
+    ports:
+      - "${IP_DOCKER01:-10.10.10.30}:53:53/udp"
+      - "${IP_DOCKER01:-10.10.10.30}:53:53/tcp"
+    volumes:
+      - ./config:/etc/bind:ro
+      - bind_cache:/var/cache/bind
+
+volumes:
+  bind_cache:

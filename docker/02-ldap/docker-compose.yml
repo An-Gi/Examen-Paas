@@ -1,0 +1,39 @@
+# Servicio 2/6 · LDAP (Linux Domain Controller) — Responsable: Estudiante A (Fase 3)
+# Demo:  ldapsearch -x -H ldap://10.10.10.30 -b dc=paas,dc=internal
+#        Alta de un usuario en phpLDAPadmin: http://ldap.paas.internal:8081
+#        (login: cn=admin,dc=paas,dc=internal)
+# Nota: las imágenes osixia ya no reciben mantenimiento activo, pero siguen siendo las más documentadas.
+#       TODO(A): evaluar una alternativa mantenida y registrar la decisión como ADR.
+services:
+  openldap:
+    image: osixia/openldap:1.5.0
+    container_name: openldap
+    restart: unless-stopped
+    # --copy-service: permite cargar los LDIF de ./ldif en el primer arranque
+    command: --copy-service
+    environment:
+      LDAP_ORGANISATION: "Examen PaaS"
+      LDAP_DOMAIN: ${DOMINIO_LAN:-paas.internal}
+      LDAP_ADMIN_PASSWORD: ${LDAP_ADMIN_PASSWORD:?definir en docker/.env}
+      LDAP_TLS: "false"            # TODO(A): opcional, TLS con un certificado de nuestra CA
+    ports:
+      - "${IP_DOCKER01:-10.10.10.30}:389:389"
+    volumes:
+      - ldap_data:/var/lib/ldap
+      - ldap_config:/etc/ldap/slapd.d
+      - ./ldif:/container/service/slapd/assets/config/bootstrap/ldif/custom:ro
+
+  phpldapadmin:
+    image: osixia/phpldapadmin:0.9.0
+    container_name: phpldapadmin
+    restart: unless-stopped
+    depends_on: [openldap]
+    environment:
+      PHPLDAPADMIN_LDAP_HOSTS: openldap
+      PHPLDAPADMIN_HTTPS: "false"
+    ports:
+      - "${IP_DOCKER01:-10.10.10.30}:8081:80"
+
+volumes:
+  ldap_data:
+  ldap_config:

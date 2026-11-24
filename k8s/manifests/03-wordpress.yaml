@@ -1,0 +1,62 @@
+# WordPress en Kubernetes — Estudiante B (Fase 4)
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: wordpress-contenido
+  namespace: cms
+spec:
+  accessModes: ["ReadWriteOnce"]   # un solo nodo: las réplicas comparten el volumen (ver README)
+  storageClassName: local-path
+  resources:
+    requests:
+      storage: 2Gi
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: wordpress
+  namespace: cms
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: wordpress
+  template:
+    metadata:
+      labels:
+        app: wordpress
+    spec:
+      containers:
+        - name: wordpress
+          image: wordpress:6-apache        # TODO(B): fijar versión exacta
+          env:
+            - name: WORDPRESS_DB_HOST
+              value: mysql
+            - name: WORDPRESS_DB_NAME
+              valueFrom: { secretKeyRef: { name: wordpress-db, key: MYSQL_DATABASE } }
+            - name: WORDPRESS_DB_USER
+              valueFrom: { secretKeyRef: { name: wordpress-db, key: MYSQL_USER } }
+            - name: WORDPRESS_DB_PASSWORD
+              valueFrom: { secretKeyRef: { name: wordpress-db, key: MYSQL_PASSWORD } }
+          ports:
+            - containerPort: 80
+          volumeMounts:
+            - name: contenido
+              mountPath: /var/www/html
+          # TODO(B): readinessProbe/livenessProbe HTTP y resources
+      volumes:
+        - name: contenido
+          persistentVolumeClaim:
+            claimName: wordpress-contenido
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: wordpress
+  namespace: cms
+spec:
+  selector:
+    app: wordpress
+  ports:
+    - port: 80
+      targetPort: 80

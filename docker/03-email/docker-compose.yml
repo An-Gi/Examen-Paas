@@ -1,0 +1,54 @@
+# Servicio 3/6 · Email Server (docker-mailserver + Roundcube) — Responsable: Estudiante A (Fase 3)
+# Demo:  1) docker exec -it mailserver setup email add usuario1@paas.internal
+#           docker exec -it mailserver setup email add usuario2@paas.internal
+#        2) Roundcube http://webmail.paas.internal:8082: usuario1 envía, usuario2 recibe
+# Requiere el MX de paas.internal en 01-dns-bind9. El puerto 25 hacia Internet está bloqueado
+# por ISPs y AWS: la demo es solo dentro del dominio.
+services:
+  mailserver:
+    image: ghcr.io/docker-mailserver/docker-mailserver:15   # TODO(A): confirmar la versión estable
+    container_name: mailserver
+    hostname: mail.${DOMINIO_LAN:-paas.internal}
+    restart: unless-stopped
+    environment:
+      TZ: ${TZ:-America/Costa_Rica}
+      ENABLE_RSPAMD: 0
+      ENABLE_CLAMAV: 0
+      ENABLE_FAIL2BAN: 0
+      PERMIT_DOCKER: network
+      # TODO(A): SSL_TYPE=manual con un certificado de nuestra CA (pedírselo a B: ca.sh csr mail)
+      #          Sin TLS, revisar cómo se comporta la autenticación en texto plano de Roundcube.
+      SSL_TYPE: ""
+    ports:
+      - "${IP_DOCKER01:-10.10.10.30}:25:25"
+      - "${IP_DOCKER01:-10.10.10.30}:143:143"
+      - "${IP_DOCKER01:-10.10.10.30}:465:465"
+      - "${IP_DOCKER01:-10.10.10.30}:587:587"
+      - "${IP_DOCKER01:-10.10.10.30}:993:993"
+    volumes:
+      # dms/config guarda las cuentas (hashes): ignorado por Git
+      - ./dms/config:/tmp/docker-mailserver
+      - mail_data:/var/mail
+      - mail_state:/var/mail-state
+      - mail_logs:/var/log/mail
+
+  roundcube:
+    image: roundcube/roundcubemail:latest   # TODO(A): fijar versión
+    container_name: roundcube
+    restart: unless-stopped
+    depends_on: [mailserver]
+    environment:
+      ROUNDCUBEMAIL_DEFAULT_HOST: mailserver
+      ROUNDCUBEMAIL_DEFAULT_PORT: 143
+      ROUNDCUBEMAIL_SMTP_SERVER: mailserver
+      ROUNDCUBEMAIL_SMTP_PORT: 587
+    ports:
+      - "${IP_DOCKER01:-10.10.10.30}:8082:80"
+    volumes:
+      - roundcube_data:/var/roundcube/db
+
+volumes:
+  mail_data:
+  mail_state:
+  mail_logs:
+  roundcube_data:

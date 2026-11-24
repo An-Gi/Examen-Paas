@@ -1,0 +1,51 @@
+# MySQL del CMS en Kubernetes — Estudiante B (Fase 4)
+# StatefulSet: identidad estable (mysql-0) y un volumen propio por réplica.
+apiVersion: v1
+kind: Service
+metadata:
+  name: mysql
+  namespace: cms
+spec:
+  clusterIP: None          # headless: DNS estable mysql-0.mysql.cms.svc
+  selector:
+    app: mysql
+  ports:
+    - port: 3306
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: mysql
+  namespace: cms
+spec:
+  serviceName: mysql
+  replicas: 1
+  selector:
+    matchLabels:
+      app: mysql
+  template:
+    metadata:
+      labels:
+        app: mysql
+    spec:
+      containers:
+        - name: mysql
+          image: mysql:8.4
+          envFrom:
+            - secretRef:
+                name: wordpress-db
+          ports:
+            - containerPort: 3306
+          volumeMounts:
+            - name: datos
+              mountPath: /var/lib/mysql
+          # TODO(B): readinessProbe (mysqladmin ping) y resources (requests/limits)
+  volumeClaimTemplates:
+    - metadata:
+        name: datos
+      spec:
+        accessModes: ["ReadWriteOnce"]
+        storageClassName: local-path     # provisioner incluido en k3s
+        resources:
+          requests:
+            storage: 2Gi

@@ -1,0 +1,7 @@
+# Valores por defecto del rol openvpn (se sobrescriben en inventories/group_vars/all.yml)
+---
+openvpn_dir: /etc/openvpn/server
+openvpn_easyrsa_dir: /etc/openvpn/easy-rsa
+openvpn_ccd_dir: /etc/openvpn/server/ccd
+openvpn_dns_push: 1.1.1.1
+openvpn_clientes_destino_local: "{{ playbook_dir }}/../clientes-ovpn/"

@@ -1,0 +1,29 @@
+%% Diagrama de red del examen. Exportar: make diagrama  ->  docs/img/red.png
+flowchart LR
+  subgraph INTERNET["Internet"]
+    U["Usuario público"]
+    DNSP["DNS público<br/>cms.DOMINIO → IP elástica"]
+    PH["Teléfono · cliente VPN"]
+  end
+  subgraph AWS["AWS · us-east-1"]
+    EC2["EC2 t3.micro + IP elástica<br/>OpenVPN TCP/1194 TAP · 10.8.0.1<br/>Nginx reverse proxy"]
+  end
+  subgraph HOST["Máquina anfitriona · VirtualBox"]
+    LAP["Anfitrión 10.10.10.1<br/>navegador de la demo · cliente VPN"]
+    subgraph LAN["LAN host-only 10.10.10.0/24 · paas.internal"]
+      DB["db01 · 10.10.10.10<br/>MySQL 8"]
+      WEB["web01 · 10.10.10.20<br/>Apache + PHP + WordPress<br/>HTTP :80 · HTTPS :443 (CA propia)<br/>VPN 10.8.0.20"]
+      DOCK["docker01 · 10.10.10.30<br/>BIND9 · OpenLDAP · Email<br/>OwnCloud · FTP · SMB<br/>extras: Grafana · Uptime Kuma"]
+      K8S["k8s01 · 10.10.10.40<br/>k3s · Traefik<br/>WordPress + MySQL"]
+    end
+  end
+  U -- "1 · resuelve" --> DNSP
+  U -- "2 · HTTP/HTTPS" --> EC2
+  EC2 -- "3 · túnel VPN 10.8.0.0/24" --> WEB
+  PH -- "VPN TCP" --> EC2
+  LAP -- "VPN TCP" --> EC2
+  WEB -- "MySQL 3306" --> DB
+  LAP --> WEB
+  LAP --> DOCK
+  LAP --> K8S
+  DOCK -. "DNS interno" .-> WEB

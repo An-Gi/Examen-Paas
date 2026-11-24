@@ -1,0 +1,54 @@
+# Servicio 4/6 · OwnCloud — Responsable: Estudiante B (Fase 3)
+# Demo:  http://cloud.paas.internal:8080 → login → subir un archivo → descargarlo desde otra VM
+# MariaDB y Redis son auxiliares de este servicio (no cuentan aparte; ver la pregunta #2).
+services:
+  owncloud:
+    image: owncloud/server:10.15   # TODO(B): confirmar el tag 10.x vigente
+    container_name: owncloud
+    restart: unless-stopped
+    depends_on: [mariadb, redis]
+    environment:
+      OWNCLOUD_DOMAIN: cloud.${DOMINIO_LAN:-paas.internal}:8080
+      OWNCLOUD_TRUSTED_DOMAINS: cloud.${DOMINIO_LAN:-paas.internal},${IP_DOCKER01:-10.10.10.30}
+      OWNCLOUD_DB_TYPE: mysql
+      OWNCLOUD_DB_NAME: owncloud
+      OWNCLOUD_DB_USERNAME: owncloud
+      OWNCLOUD_DB_PASSWORD: ${OWNCLOUD_DB_PASSWORD:?definir en docker/.env}
+      OWNCLOUD_DB_HOST: mariadb
+      OWNCLOUD_ADMIN_USERNAME: ${OWNCLOUD_ADMIN_USER:-admin}
+      OWNCLOUD_ADMIN_PASSWORD: ${OWNCLOUD_ADMIN_PASSWORD:?definir en docker/.env}
+      OWNCLOUD_MYSQL_UTF8MB4: "true"
+      OWNCLOUD_REDIS_ENABLED: "true"
+      OWNCLOUD_REDIS_HOST: redis
+      # TODO(B): opcional, integrar usuarios del LDAP de A (app user_ldap)
+    ports:
+      - "${IP_DOCKER01:-10.10.10.30}:8080:8080"
+    volumes:
+      - owncloud_files:/mnt/data
+
+  mariadb:
+    image: mariadb:10.11
+    container_name: owncloud_mariadb
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: ${OWNCLOUD_DB_ROOT_PASSWORD:?definir en docker/.env}
+      MYSQL_DATABASE: owncloud
+      MYSQL_USER: owncloud
+      MYSQL_PASSWORD: ${OWNCLOUD_DB_PASSWORD:?definir en docker/.env}
+      MARIADB_AUTO_UPGRADE: "1"
+    command: ["--max-allowed-packet=128M", "--innodb-log-file-size=64M"]
+    volumes:
+      - owncloud_mysql:/var/lib/mysql
+
+  redis:
+    image: redis:7
+    container_name: owncloud_redis
+    restart: unless-stopped
+    command: ["--databases", "1"]
+    volumes:
+      - owncloud_redis:/data
+
+volumes:
+  owncloud_files:
+  owncloud_mysql:
+  owncloud_redis:

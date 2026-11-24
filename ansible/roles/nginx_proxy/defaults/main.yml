@@ -1,0 +1,3 @@
+---
+nginx_proxy_certbot: false        # TODO(A): true cuando el registro A ya resuelva a la IP elástica
+nginx_proxy_email: "CAMBIAR@ejemplo.com"

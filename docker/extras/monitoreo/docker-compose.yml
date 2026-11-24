@@ -1,0 +1,30 @@
+# EXTRA 1 · Monitoreo (Prometheus + Grafana) — Responsable: Estudiante A (Fase 6)
+# Servicio fuera de la lista del enunciado (confirmar con el profesor que cuenta como 1, pregunta #4).
+# Demo: http://grafana.paas.internal:3000 → dashboard "Node Exporter Full" con las 4 VMs.
+# En cada VM: sudo apt install -y prometheus-node-exporter   (puerto 9100)
+services:
+  prometheus:
+    image: prom/prometheus:latest   # TODO(A): fijar versión
+    container_name: prometheus
+    restart: unless-stopped
+    ports:
+      - "${IP_DOCKER01:-10.10.10.30}:9090:9090"
+    volumes:
+      - ./prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - prometheus_data:/prometheus
+
+  grafana:
+    image: grafana/grafana:latest   # TODO(A): fijar versión
+    container_name: grafana
+    restart: unless-stopped
+    depends_on: [prometheus]
+    environment:
+      GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_ADMIN_PASSWORD:?definir en docker/.env}
+    ports:
+      - "${IP_DOCKER01:-10.10.10.30}:3000:3000"
+    volumes:
+      - grafana_data:/var/lib/grafana
+
+volumes:
+  prometheus_data:
+  grafana_data:

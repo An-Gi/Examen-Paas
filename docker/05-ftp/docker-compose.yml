@@ -1,0 +1,27 @@
+# Servicio 5/6 · FileServer FTP (pure-ftpd) — Responsable: Estudiante B (Fase 3)
+# Demo (desde web01 o db01, "punto de montaje en un cliente Linux"):
+#   sudo apt install -y curlftpfs && sudo mkdir -p /mnt/ftp
+#   sudo curlftpfs -o allow_other ftp://USUARIO:CLAVE@10.10.10.30 /mnt/ftp && ls /mnt/ftp
+# Modo pasivo: el servidor anuncia PUBLICHOST y un rango de puertos que también se publica.
+services:
+  ftp:
+    image: stilliard/pure-ftpd:latest   # TODO(B): fijar versión
+    container_name: ftp
+    restart: unless-stopped
+    environment:
+      PUBLICHOST: ${IP_DOCKER01:-10.10.10.30}
+      FTP_PASSIVE_PORTS: "30000:30009"
+      FTP_USER_NAME: ${FTP_USER:?definir en docker/.env}
+      FTP_USER_PASS: ${FTP_PASSWORD:?definir en docker/.env}
+      FTP_USER_HOME: /home/ftpusers/${FTP_USER}
+      # TODO(B): ¿FTPS (--tls) con un certificado de nuestra CA? Documentarlo si se hace.
+    ports:
+      - "${IP_DOCKER01:-10.10.10.30}:21:21"
+      - "${IP_DOCKER01:-10.10.10.30}:30000-30009:30000-30009"
+    volumes:
+      - ftp_data:/home/ftpusers
+      - ftp_passwd:/etc/pure-ftpd/passwd
+
+volumes:
+  ftp_data:
+  ftp_passwd:

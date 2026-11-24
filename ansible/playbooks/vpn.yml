@@ -1,0 +1,18 @@
+# Configura la EC2 creada por Terraform — Estudiante A
+# Uso (desde ansible/):
+#   ansible-playbook playbooks/vpn.yml --skip-tags proxy   # Fase 2: solo OpenVPN
+#   ansible-playbook playbooks/vpn.yml --tags proxy        # Fase 5: solo Nginx
+---
+- name: Servidor OpenVPN (TCP/TAP) con salida a Internet por AWS
+  hosts: vpn
+  become: true
+  roles:
+    - role: openvpn
+      tags: [vpn]
+
+- name: Reverse proxy público del CMS hacia web01 por el túnel
+  hosts: vpn
+  become: true
+  roles:
+    - role: nginx_proxy
+      tags: [proxy]

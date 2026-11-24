@@ -1,0 +1,28 @@
+# Cliente OpenVPN: {{ item.nombre }} — generado por Ansible (rol openvpn)
+client
+dev {{ vpn_dev }}
+proto {{ vpn_proto }}
+remote {{ ansible_host }} {{ vpn_puerto }}
+resolv-retry infinite
+nobind
+persist-key
+persist-tun
+remote-cert-tls server
+verb 3
+{% if item.sin_redirect_gateway | default(false) %}
+# Este cliente solo usa el túnel para recibir el tráfico del reverse proxy
+pull-filter ignore "redirect-gateway"
+pull-filter ignore "dhcp-option"
+{% endif %}
+<ca>
+{{ ca_crt | default('TODO(A): contenido de ca.crt') }}
+</ca>
+<cert>
+{{ cliente_crt | default('TODO(A): certificado del cliente') }}
+</cert>
+<key>
+{{ cliente_key | default('TODO(A): llave del cliente') }}
+</key>
+<tls-crypt>
+{{ tls_crypt_key | default('TODO(A): contenido de tc.key') }}
+</tls-crypt>

@@ -1,0 +1,17 @@
+# Servicio de RESPALDO · DHCP (dhcpd) — Responsable: Estudiante B
+# Solo se activa si alguno de los 6 servicios falla. Está bajo el perfil "respaldo",
+# así que un `up` normal NO lo levanta:
+#   docker compose --env-file ../.env --profile respaldo up -d
+# Requiere network_mode: host (DHCP usa broadcast en la capa 2) y que VirtualBox no tenga
+# su propio DHCP en vboxnet0 (preparar-red-virtualbox.sh ya lo apaga).
+# Demo: una VM nueva con enp0s8 en DHCP recibe una IP del rango 10.10.10.100-150.
+services:
+  dhcpd:
+    image: networkboot/dhcpd:latest   # TODO(B): fijar versión
+    container_name: dhcpd
+    profiles: ["respaldo"]
+    network_mode: host
+    restart: "no"
+    command: ["enp0s8"]
+    volumes:
+      - ./data:/data

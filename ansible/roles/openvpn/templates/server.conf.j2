@@ -1,0 +1,29 @@
+# {{ ansible_managed }}
+# OpenVPN server — Estudiante A (Fase 2). Requisitos del enunciado: TCP + TAP + rutear por AWS.
+port {{ vpn_puerto }}
+proto {{ vpn_proto }}
+dev {{ vpn_dev }}
+topology subnet
+server {{ vpn_red }} {{ vpn_mascara }}
+
+ca ca.crt
+cert server.crt
+key server.key
+dh none
+tls-crypt tc.key
+
+client-config-dir {{ openvpn_ccd_dir }}
+
+# Todo el tráfico de los clientes sale por la EC2 (web01 lo ignora con pull-filter)
+push "redirect-gateway def1"
+push "dhcp-option DNS {{ openvpn_dns_push }}"
+
+keepalive 10 120
+persist-key
+persist-tun
+user nobody
+group nogroup
+status /var/log/openvpn/status.log
+verb 3
+
+# TODO(A): revisar data-ciphers, client-to-client (¿la laptop debe ver a web01?) y plan B port-share 443

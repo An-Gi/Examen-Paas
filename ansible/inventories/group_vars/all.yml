@@ -1,0 +1,24 @@
+# Variables compartidas — Estudiante A. Fuente: docs/convenciones.md
+---
+# Dominios
+dominio_lan: paas.internal
+dominio_publico: "CAMBIAR.xyz"          # TODO(A): completar en la Fase 0 (0.5.5)
+cms_fqdn: "cms.{{ dominio_publico }}"
+
+# OpenVPN (requisitos del enunciado: TCP + TAP)
+vpn_puerto: 1194
+vpn_proto: tcp
+vpn_dev: tap
+vpn_red: 10.8.0.0
+vpn_mascara: 255.255.255.0
+
+# Clientes: se genera un .ovpn por cada uno
+vpn_clientes:
+  - nombre: laptop
+  - nombre: web01
+    ip_fija: 10.8.0.20                   # client-config-dir (ifconfig-push)
+    sin_redirect_gateway: true           # solo túnel hacia el proxy
+  - nombre: telefono                     # TODO(A): TAP o TUN según la respuesta del profesor (#1)
+
+# Destino del reverse proxy (Fase 5)
+web01_ip_vpn: 10.8.0.20

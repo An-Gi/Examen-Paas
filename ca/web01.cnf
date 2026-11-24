@@ -1,0 +1,23 @@
+# CSR de web01 — Estudiante B (Fase 1)
+# Los navegadores validan el nombre contra el SAN, no contra el CN.
+# Para otro servidor (p. ej. mail): copiar este archivo como mail.cnf y cambiar CN y [san].
+
+[ req ]
+default_bits       = 2048
+prompt             = no
+distinguished_name = dn
+req_extensions     = ext_req
+
+[ dn ]
+C  = CR
+O  = Examen PaaS II-2026
+CN = web01.paas.internal
+
+[ ext_req ]
+subjectAltName = @san
+
+[ san ]
+DNS.1 = web01.paas.internal
+DNS.2 = www.paas.internal
+IP.1  = 10.10.10.20
+# TODO(B): ¿agregar cms.<dominio público>? Solo si Nginx en EC2 hace passthrough TLS (ver nativo/README.md)

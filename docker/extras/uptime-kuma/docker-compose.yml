@@ -1,0 +1,16 @@
+# EXTRA 2 · Uptime Kuma — Responsable: Estudiante B (Fase 6)
+# Servicio fuera de la lista del enunciado (pregunta #4).
+# Demo: http://kuma.paas.internal:3001 → un monitor por servicio (HTTP, DNS, puertos TCP), todos en verde;
+#       detener un contenedor en vivo y mostrar la alerta.
+services:
+  uptime-kuma:
+    image: louislam/uptime-kuma:1   # TODO(B): evaluar la rama 2.x y fijar versión
+    container_name: uptime-kuma
+    restart: unless-stopped
+    ports:
+      - "${IP_DOCKER01:-10.10.10.30}:3001:3001"
+    volumes:
+      - kuma_data:/app/data
+
+volumes:
+  kuma_data:

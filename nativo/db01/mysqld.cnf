@@ -1,0 +1,7 @@
+# /etc/mysql/mysql.conf.d/99-paas.cnf — db01 · Estudiante B (Fase 1)
+# Se carga después de mysqld.cnf, por eso este archivo gana.
+[mysqld]
+# Escucha solo en la LAN: ni en 0.0.0.0 ni en la NIC NAT
+bind-address = 10.10.10.10
+# TODO(B): decidir mysqlx-bind-address (X Protocol, puerto 33060): ¿desactivarlo o limitarlo?
+# TODO(B): evaluar require_secure_transport = ON con un certificado de nuestra CA (extra de seguridad)

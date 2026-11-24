@@ -1,0 +1,24 @@
+# Rol openvpn — Estudiante A (Fase 2)
+# Cada TODO es una o varias tareas. Usar módulos idempotentes (apt, template, sysctl, command con creates:).
+---
+- name: "TODO(A): el rol openvpn todavía no está implementado"
+  ansible.builtin.debug:
+    msg: "Implementar los pasos 1-9 de roles/openvpn/tasks/main.yml"
+
+# TODO(A) 1. Paquetes: openvpn, easy-rsa, iptables-persistent (debconf para que no pregunte)
+# TODO(A) 2. PKI con easy-rsa en {{ openvpn_easyrsa_dir }}:
+#            init-pki, build-ca nopass, build-server-full server nopass
+#            (usar `creates:` para que no se regenere en cada ejecución)
+#            tls-crypt: openvpn --genkey secret {{ openvpn_dir }}/tc.key
+#            Con OpenVPN 2.6 se puede usar "dh none" (ECDHE): no hace falta generar DH.
+# TODO(A) 3. Copiar ca.crt, server.crt y server.key a {{ openvpn_dir }}
+# TODO(A) 4. template server.conf.j2 -> {{ openvpn_dir }}/server.conf  (notify: reiniciar openvpn)
+# TODO(A) 5. client-config-dir: un archivo por cliente con ip_fija
+#            ({{ openvpn_ccd_dir }}/web01 -> "ifconfig-push 10.8.0.20 255.255.255.0")
+# TODO(A) 6. sysctl net.ipv4.ip_forward=1 (ansible.posix.sysctl, persistente)
+# TODO(A) 7. NAT: iptables -t nat -A POSTROUTING -s {{ vpn_red }}/24 -o {{ ansible_default_ipv4.interface }} -j MASQUERADE
+#            (en EC2 la interfaz suele ser ens5) y persistirlo con netfilter-persistent
+# TODO(A) 8. Por cada item de vpn_clientes: build-client-full <nombre> nopass y
+#            template cliente.ovpn.j2 -> /root/clientes/<nombre>.ovpn
+# TODO(A) 9. fetch de los .ovpn a {{ openvpn_clientes_destino_local }} (flat: true)
+# TODO(A) 10. Servicio openvpn-server@server habilitado y arrancado
