@@ -39,7 +39,7 @@ cp .env.example .env               # contraseñas reales desde el gestor compart
 
 ```bash
 # Docker Engine oficial: https://docs.docker.com/engine/install/ubuntu/
-sudo usermod -aG docker paas
+sudo usermod -aG docker "$USER"   # zekken
 # Clientes para las pruebas en las otras VMs:
 sudo apt install -y dnsutils ldap-utils curlftpfs cifs-utils
 ```

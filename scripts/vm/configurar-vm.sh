@@ -5,7 +5,9 @@
 #
 # Uso (en la consola del clon): sudo configurar-vm <hostname> <ip>
 #   Ejemplo: sudo configurar-vm web01 10.10.10.20
-#   IFACE=enp0s8 DOMINIO=paas.internal
+#   IFACE=<nic de la LAN> DOMINIO=paas.internal
+#   Sin IFACE, la NIC de la LAN se detecta: es la que NO lleva la ruta por defecto (esa es la NAT).
+#   Así sirve igual en x86 (NAT=enp0s3, LAN=enp0s8) y en ARM (NAT=enp0s8, LAN=la 2.ª NIC), ADR-0002.
 #
 # ¿Por qué regenerar machine-id y llaves SSH? Los clones heredan los de la plantilla:
 #  - machine-id repetido: systemd-networkd usa ese valor para el DUID/IAID de DHCP, así que
@@ -16,7 +18,15 @@ set -euo pipefail
 [[ $EUID -eq 0 ]] || { echo "Ejecutar con sudo"; exit 1; }
 NOMBRE="${1:?Uso: sudo configurar-vm <hostname> <ip>}"
 IP="${2:?Uso: sudo configurar-vm <hostname> <ip>}"
-IFACE="${IFACE:-enp0s8}"
+# NIC de la LAN = la única interfaz física que no es "lo" ni la de la ruta por defecto (NAT).
+detectar_lan() {
+  local nat
+  nat=$(ip -o route show default | awk '{print $5; exit}')
+  ip -o link show | awk -F': ' '{print $2}' | sed 's/@.*//' \
+    | grep -Ev "^(lo|docker|br-|veth|cni|flannel|tap|tun)" | grep -vx "${nat:-ninguna}" | head -n1 || true   # sin || true, set -e cortaría antes del mensaje de error
+}
+IFACE="${IFACE:-$(detectar_lan)}"
+[[ -n $IFACE ]] || { echo "No se encontró la NIC de la LAN: ¿falta el adaptador 2 (lan-paas)? Usar IFACE=..."; exit 1; }
 DOMINIO="${DOMINIO:-paas.internal}"
 
 [[ $IP =~ ^10\.10\.10\.[0-9]{1,3}$ ]] || { echo "La IP debe estar en 10.10.10.0/24"; exit 1; }
@@ -43,6 +53,9 @@ network:
     ${IFACE}:
       dhcp4: false
       addresses: [${IP}/24]
+      # Sin esto, netplan hace que systemd-networkd-wait-online espere DNS en esta NIC
+      # (que no tiene: IP fija sin nameservers) y cada arranque se traba 2 min antes del login.
+      optional: true
 EOF
 chmod 600 /etc/netplan/60-lan-paas.yaml
 netplan apply

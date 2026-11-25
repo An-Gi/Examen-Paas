@@ -5,7 +5,7 @@
 # Modo pasivo: el servidor anuncia PUBLICHOST y un rango de puertos que también se publica.
 services:
   ftp:
-    image: stilliard/pure-ftpd:latest   # TODO(B): fijar versión
+    image: stilliard/pure-ftpd:latest   # TODO(B): sin arm64 -> crazymax/pure-ftpd:1.0.54 y adaptar variables (ADR-0002)
     container_name: ftp
     restart: unless-stopped
     environment:

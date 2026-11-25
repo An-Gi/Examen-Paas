@@ -40,19 +40,19 @@ gantt
 ## 0.1 Kick-off (A + B, 1 h)
 
 - [ ] **Leer juntos el enunciado y la rúbrica** (15 min). Confirmar que solo se implementa lo que puntúa: FreeBSD jails, LTSP, OpenStack, BigBlueButton y el Windows DC **no** están en la rúbrica (decisión registrada en [ADR-0001](decisiones/0001-arquitectura-base.md)).
-- [ ] **Redactar la Introducción** (§1 de [`documentacion.md`](documentacion.md)) con palabras propias (15 min). El enunciado pide que se discuta y redacte en el kick-off, así que conviene hacerlo ahora y no al final.
+- [x] **Redactar la Introducción** (§1 de [`documentacion.md`](documentacion.md)) con palabras propias (15 min). El enunciado pide que se discuta y redacte en el kick-off, así que conviene hacerlo ahora y no al final.
 - [ ] **Revisar y aceptar los acuerdos** (15 min). Si algo cambia, se edita antes de seguir:
   - [`division-trabajo.md`](division-trabajo.md): quién hace qué.
   - [`convenciones.md`](convenciones.md): IPs, nombres, dominios, puertos.
-  - [`decisiones/0001-arquitectura-base.md`](decisiones/0001-arquitectura-base.md): pasar de *Propuesta* a *Aceptada*.
-  - Completar los nombres en el [`README.md`](../README.md).
-- [ ] **Elegir la máquina anfitriona de la demo** y anotarla en `convenciones.md`. Requisitos:
+  - [x] [`decisiones/0001-arquitectura-base.md`](decisiones/0001-arquitectura-base.md): pasar de *Propuesta* a *Aceptada* (2026-11-25, con los cambios de ADR-0002).
+  - [x] Completar los nombres en el [`README.md`](../README.md): A = Angie (@An-Gi), B = @AleQuesada2012 (2026-11-25).
+- [x] **Elegir la máquina anfitriona de la demo** y anotarla en `convenciones.md`. **Decidido:** Mac M2 Pro de B con VMs ARM64 ([ADR-0002](decisiones/0002-anfitriona-mac-arm64.md)). Requisitos originales:
   - ≥ 16 GB de RAM (las 4 VMs suman ~11 GB).
   - ≥ 100 GB libres en SSD.
   - Virtualización habilitada en BIOS/UEFI (Intel VT-x / AMD-V). En Linux: `grep -Ec '(vmx|svm)' /proc/cpuinfo` debe dar > 0.
   - VirtualBox 7.x.
   - Si el otro equipo tiene menos RAM, ese estudiante desarrolla solo con las VMs que necesita y se integra en la anfitriona al cerrar cada fase.
-- [ ] **Intercambiar llaves SSH públicas.** Cada uno genera la suya si no la tiene (`ssh-keygen -t ed25519`) y le pasa a B el contenido de `~/.ssh/id_ed25519.pub`. B las necesita en el paso 0.4.5.
+- [x] **Intercambiar llaves SSH públicas.** (2026-11-25: las de A y B están en `~zekken/.ssh/authorized_keys` de las 4 VMs.) Cada uno genera la suya si no la tiene (`ssh-keygen -t ed25519`) y le pasa a B el contenido de `~/.ssh/id_ed25519.pub`. B las necesita en el paso 0.4.5.
 - [ ] **Definir dónde se guardan las contraseñas compartidas.** Por ejemplo, una organización gratuita de Bitwarden para 2 personas. Nunca en Git ni en el chat.
 - [ ] **Acordar el ritmo**: sincronización de 15 min cada 2 días e integración en la anfitriona al cerrar cada fase.
 - [ ] **Abrir las bitácoras** y registrar esta sesión, cada uno en su archivo:
@@ -109,7 +109,7 @@ gantt
 | Node.js (`npx`, para mermaid-cli) | opcional | opcional | Exportar el diagrama a PNG |
 
 - **Windows:** usar **WSL2 (Ubuntu)** para scripts, Terraform y Ansible, porque Ansible no corre nativo en Windows. VirtualBox 7 funciona con Hyper-V activo, pero más lento. Si las VMs se arrastran, desactivar "Plataforma de máquina virtual" o usar la otra máquina como anfitriona.
-- **macOS con Apple Silicon:** VirtualBox no ejecuta VMs x86. Ese equipo no puede ser la anfitriona.
+- **macOS con Apple Silicon:** VirtualBox 7.1+ no ejecuta VMs x86, pero sí VMs **ARM64**. Es la anfitriona elegida ([ADR-0002](decisiones/0002-anfitriona-mac-arm64.md)): se usa la ISO `arm64` de Ubuntu Server y la red `hostonlynet` `lan-paas`.
 
 Verificación:
 
@@ -130,31 +130,45 @@ Se hace **en la máquina anfitriona**.
 bash scripts/vm/preparar-red-virtualbox.sh
 ```
 
+En macOS (anfitriona elegida, [ADR-0002](decisiones/0002-anfitriona-mac-arm64.md)) el script crea la red `hostonlynet` **`lan-paas`** con rango `.1–.9`: vmnet le da al anfitrión la primera IP del rango (`10.10.10.1`). En las VMs el adaptador 2 se conecta a esa red en vez de a `vboxnet0`.
+
 En Linux, VirtualBox ≥ 6.1.28 solo permite `192.168.56.0/21` para redes host-only. El script lo detecta y muestra el comando para permitir `10.10.10.0/24` en `/etc/vbox/networks.conf`. El script también apaga el DHCP de VirtualBox en esa red, porque las IPs son fijas.
 
 ### 0.4.2 ISO
 
-Descargar **Ubuntu Server 24.04.x LTS** (la versión menor más reciente) desde <https://ubuntu.com/download/server> y verificar su integridad:
+Descargar **Ubuntu Server 26.04 LTS para ARM64** (`ubuntu-26.04-live-server-arm64.iso`, en <https://ubuntu.com/download/server/arm>) y verificar su integridad:
 
 ```bash
 sha256sum -c SHA256SUMS --ignore-missing
 ```
 
-### 0.4.3 Crear la VM plantilla `ubuntu2404-plantilla`
+### 0.4.3 Crear la VM plantilla `ubuntu2604-plantilla`
 
 | Parámetro | Valor |
 |---|---|
 | RAM / CPU | 2048 MB / 2 (los clones se ajustan después) |
 | Disco | VDI dinámico de 25 GB |
-| Adaptador 1 | NAT (salida a Internet) → `enp0s3` |
-| Adaptador 2 | Host-only `vboxnet0` → `enp0s8` |
+| Adaptador 1 | NAT (salida a Internet) → `enp0s8` en ARM (`enp0s3` en x86) |
+| Adaptador 2 | Red host-only `lan-paas` (macOS) → `enp0s9` en ARM (`enp0s8` en x86) |
+| Tipo de SO | Ubuntu (ARM 64-bit) · `Ubuntu_arm64` (VirtualBox 7.2.0 aún no lista 26.04; el tipo solo fija valores por defecto) |
+
+\* Confirmar el nombre real con `ip -br link` después de instalar.
+
+> ⚠️ **El asistente de "Nueva VM" de VirtualBox no pregunta por la red**: crea solo el adaptador 1 (NAT). El adaptador 2 se agrega después, con la VM **apagada**, en *Configuración → Red → Adaptador 2 → Habilitar → Conectado a: Red solo-anfitrión → `lan-paas`*, o con:
+>
+> ```bash
+> VBoxManage modifyvm ubuntu2604-plantilla --nic2 hostonlynet --host-only-net2 lan-paas
+> ```
+>
+> En VMs **ARM** la numeración de PCI cambia: el adaptador 1 (NAT) aparece como `enp0s8`, justo el nombre que en x86 tiene la LAN. Por eso los scripts detectan la NIC de la LAN (la que no lleva la ruta por defecto) en lugar de suponer `enp0s8`.
 
 <details><summary>Alternativa por CLI</summary>
 
 ```bash
-VM=ubuntu2404-plantilla; ISO=~/Descargas/ubuntu-24.04.x-live-server-amd64.iso
-VBoxManage createvm --name $VM --ostype Ubuntu_64 --register
-VBoxManage modifyvm $VM --memory 2048 --cpus 2 --nic1 nat --nic2 hostonly --hostonlyadapter2 vboxnet0 --graphicscontroller vmsvga
+# macOS + Apple Silicon (ADR-0002)
+VM=ubuntu2604-plantilla; ISO=~/Downloads/ubuntu-26.04-live-server-arm64.iso
+VBoxManage createvm --name $VM --platform-architecture arm --ostype Ubuntu_arm64 --register
+VBoxManage modifyvm $VM --memory 2048 --cpus 2 --nic1 nat --nic2 hostonlynet --host-only-net2 lan-paas
 DIR="$(VBoxManage showvminfo $VM --machinereadable | grep ^CfgFile | cut -d'"' -f2 | xargs dirname)"
 VBoxManage createmedium disk --filename "$DIR/$VM.vdi" --size 25600
 VBoxManage storagectl $VM --name SATA --add sata --controller IntelAhci
@@ -167,22 +181,24 @@ VBoxManage startvm $VM
 ### 0.4.4 Instalar Ubuntu Server
 
 - Idioma del sistema en **inglés**, para que los mensajes de error se puedan buscar. Teclado según el equipo.
-- Red: `enp0s3` por DHCP. `enp0s8` sin configurar, porque su IP la pone el script de cada clon.
+- Red: la NIC NAT por DHCP (`enp0s8` en ARM). La NIC de la LAN sin configurar, porque su IP la pone el script de cada clon.
 - Disco: entero, con LVM. ⚠️ El instalador deja el volumen lógico en ~la mitad del disco. Ampliar `ubuntu-lv` al máximo en la pantalla de resumen, o dejar que lo haga `preparar-plantilla.sh`.
-- Usuario: `paas`. Hostname: `plantilla`.
+- Usuario: **`zekken`** (el nuestro; anotado en [`convenciones.md`](convenciones.md)). Hostname: `ubuntu2604-plantilla` (cada clon recibe el suyo con `configurar-vm`).
 - **Instalar OpenSSH server: sí.** Snaps: ninguno.
+  - Si se olvidó, `scp` falla con `Connection refused` (la red funciona, pero nada escucha en el 22). Arreglo en la consola de la VM: `sudo apt update && sudo apt install -y openssh-server` y comprobar con `ss -tln | grep ':22'`.
 
 ### 0.4.5 Preparar la plantilla
 
-La plantilla todavía no tiene IP en la LAN, así que se le asigna una temporal para copiar los archivos:
+La plantilla todavía no tiene IP en la LAN, así que se le asigna una temporal (`.50`, fuera de los rangos DHCP y de las IPs fijas) para copiar los archivos:
 
 ```bash
 # En la consola de la VM:
-sudo ip addr add 10.10.10.5/24 dev enp0s8 && sudo ip link set enp0s8 up
+LAN=enp0s9     # ARM (ADR-0002). En x86 sería enp0s8
+sudo ip addr add 10.10.10.50/24 dev $LAN && sudo ip link set $LAN up
 
 # En la anfitriona (llaves.pub = llaves públicas de A y B, una por línea):
 cat llave-a.pub llave-b.pub > llaves.pub
-scp scripts/vm/preparar-plantilla.sh scripts/vm/configurar-vm.sh llaves.pub paas@10.10.10.5:
+scp scripts/vm/preparar-plantilla.sh scripts/vm/configurar-vm.sh llaves.pub zekken@10.10.10.50:
 
 # En la VM:
 sudo bash preparar-plantilla.sh llaves.pub
@@ -192,13 +208,13 @@ sudo poweroff
 Luego tomar el snapshot base:
 
 ```bash
-VBoxManage snapshot ubuntu2404-plantilla take base --description "Ubuntu 24.04 limpio + paquetes base"
+VBoxManage snapshot ubuntu2604-plantilla take base --description "Ubuntu 26.04 limpio + paquetes base"
 ```
 
 ### 0.4.6 Clonar las 4 VMs
 
 ```bash
-bash scripts/vm/clonar-vms.sh     # db01, web01, docker01, k8s01 (clones enlazados)
+bash scripts/vm/clonar-vms.sh     # db01, web01, docker01, k8s01 (clones enlazados, RAM de ADR-0002)
 ```
 
 ### 0.4.7 Configurar cada clon
@@ -217,8 +233,8 @@ El script pone el hostname y la IP fija, y **regenera el `machine-id` y las llav
 ### 0.4.8 Verificar desde la anfitriona
 
 ```bash
-for h in 10 20 30 40; do ssh -o StrictHostKeyChecking=accept-new paas@10.10.10.$h 'hostname; cat /etc/machine-id'; done
-ssh paas@10.10.10.20 'ping -c1 db01 && curl -sI https://ubuntu.com | head -1'
+for h in 10 20 30 40; do ssh -o StrictHostKeyChecking=accept-new zekken@10.10.10.$h 'hostname; cat /etc/machine-id'; done
+ssh zekken@10.10.10.20 'ping -c1 db01 && curl -sI https://ubuntu.com | head -1'
 ```
 
 Esperado: 4 hostnames distintos, 4 `machine-id` distintos, ping entre VMs y salida a Internet.
@@ -227,7 +243,7 @@ Opcional: agregar a `~/.ssh/config` en la anfitriona:
 
 ```
 Host db01 web01 docker01 k8s01
-  User paas
+  User zekken
 Host db01
   HostName 10.10.10.10
 Host web01
@@ -243,7 +259,7 @@ Host k8s01
 ```bash
 for vm in db01 web01 docker01 k8s01; do VBoxManage snapshot $vm take fase0-ok; done
 # Si A desarrolla en otro equipo:
-VBoxManage export ubuntu2404-plantilla -o ubuntu2404-plantilla.ova   # compartir por Drive, nunca por Git
+VBoxManage export ubuntu2604-plantilla -o ubuntu2604-plantilla.ova   # compartir por Drive, nunca por Git
 ```
 
 ---
@@ -289,16 +305,16 @@ Esperado: `Changes to Outputs: + ami_ubuntu = "ami-..."` y **0 recursos a crear*
 
 ### 0.5.5 Dominio
 
-- [ ] Comprar un `.xyz` barato (Porkbun o Namecheap) o crear un subdominio gratis en DuckDNS (confirmar que se acepta, [pregunta #5](preguntas-profesor.md)).
-- [ ] Desactivar el *parking* o *URL forwarding* del registrador.
+- [x] Dominio **`examenpaas.tech`** reservado en **name.com** con el GitHub Student Developer Pack (2026-11-25).
+- [ ] Desactivar el *parking* o *URL forwarding* del registrador (al 2026-11-25 no tiene redirección configurada; confirmar que name.com no publique página de parking).
 - [ ] Probar el acceso al panel DNS creando un registro de prueba:
 
   ```bash
   # Registro A "prueba" → 127.0.0.1, TTL 300
-  dig +short prueba.<dominio>     # debe responder 127.0.0.1; luego borrarlo
+  dig +short prueba.examenpaas.tech     # debe responder 127.0.0.1; luego borrarlo
   ```
 
-- [ ] Anotar el dominio en [`convenciones.md`](convenciones.md) y en [`ansible/inventories/group_vars/all.yml`](../ansible/inventories/group_vars/all.yml) (`dominio_publico`).
+- [x] Anotar el dominio en [`convenciones.md`](convenciones.md) y en [`ansible/inventories/group_vars/all.yml`](../ansible/inventories/group_vars/all.yml) (`dominio_publico`).
 
 ### 0.5.6 Ansible
 
@@ -333,7 +349,7 @@ ansible --version && ansible localhost -m ping
 - [ ] Repo privado con ambos colaboradores, `main` protegida (o regla acordada) y `pre-commit` instalado en los dos equipos.
 - [ ] Introducción (§1) redactada; ADR-0001, convenciones y división aceptadas.
 - [ ] `make verificar` sin ❌ en ambos equipos.
-- [ ] 4 VMs con IP fija, `machine-id` únicos, SSH con llave desde la anfitriona y snapshot `fase0-ok`.
+- [x] 4 VMs con IP fija, `machine-id` únicos, SSH con llave desde la anfitriona y snapshot `fase0-ok` (2026-11-25: Ubuntu 26.04.1 ARM64, ping entre VMs y al anfitrión, salida a Internet, login por contraseña rechazado).
 - [ ] `aws sts get-caller-identity` y `terraform plan` funcionan; el presupuesto con alertas está activo.
 - [ ] Dominio comprado o reservado, con acceso comprobado a su DNS.
 - [ ] Preguntas enviadas al profesor; backlog cargado como issues.
@@ -350,3 +366,5 @@ ansible --version && ansible localhost -m ping
 | Fuga de llaves de AWS | Bots minando cripto en la cuenta | Nunca llaves de root, gitleaks y `.gitignore` |
 | Costos olvidados | Factura inesperada | Presupuesto de USD 5 y `terraform destroy` |
 | Ansible en Windows | `ansible` no existe | WSL2 |
+| Arranque trabado 2 min ("System is booting up" al entrar por SSH) | `systemctl --failed` muestra `systemd-networkd-wait-online` | La NIC de la LAN no tiene DNS: `optional: true` en `/etc/netplan/60-lan-paas.yaml` (`configurar-vm` ya lo pone) |
+| VMs ARM con nombres de NIC al revés | `enp0s8` es la NAT, no la LAN | Los scripts detectan la LAN; ver [ADR-0002](decisiones/0002-anfitriona-mac-arm64.md) |
