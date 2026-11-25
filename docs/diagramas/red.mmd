@@ -2,13 +2,13 @@
 flowchart LR
   subgraph INTERNET["Internet"]
     U["Usuario público"]
-    DNSP["DNS público<br/>cms.DOMINIO → IP elástica"]
+    DNSP["DNS público<br/>cms.examenpaas.tech → IP elástica"]
     PH["Teléfono · cliente VPN"]
   end
   subgraph AWS["AWS · us-east-1"]
     EC2["EC2 t3.micro + IP elástica<br/>OpenVPN TCP/1194 TAP · 10.8.0.1<br/>Nginx reverse proxy"]
   end
-  subgraph HOST["Máquina anfitriona · VirtualBox"]
+  subgraph HOST["Anfitriona · Mac M2 Pro · VirtualBox 7.2 (VMs ARM64)"]
     LAP["Anfitrión 10.10.10.1<br/>navegador de la demo · cliente VPN"]
     subgraph LAN["LAN host-only 10.10.10.0/24 · paas.internal"]
       DB["db01 · 10.10.10.10<br/>MySQL 8"]

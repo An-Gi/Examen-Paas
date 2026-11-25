@@ -2,7 +2,7 @@
 title: "Examen en casa — PaaS"
 subtitle: "Red de servicios segura virtualizada"
 author:
-  - "Estudiante A: _Nombre Apellido_ (carné)"
+  - "Estudiante A: Angie _Apellido_ (carné)"
   - "Estudiante B: _Nombre Apellido_ (carné)"
 date: "II-2026"
 lang: es
@@ -21,7 +21,19 @@ geometry: margin=2.5cm
 
 <!-- A+B · Redactada en el kick-off (Fase 0), con palabras propias. ¿Qué problema se resuelve y por qué? -->
 
-_Por redactar en el kick-off._
+Las organizaciones rara vez dependen de un solo servicio: necesitan resolver nombres, guardar datos, publicar un sitio web, compartir archivos, comunicarse por correo y dar acceso remoto seguro a sus usuarios. Cada uno de esos servicios habla un protocolo distinto de la capa de aplicación (DNS, HTTP/HTTPS, SMTP/IMAP, FTP, SMB, LDAP, MySQL, OpenVPN), y el trabajo de un administrador de redes consiste tanto en ponerlos a funcionar como en lograr que convivan en una misma red sin estorbarse y sin exponer más de lo necesario.
+
+Este examen plantea montar esa infraestructura completa, una pequeña *plataforma como servicio* (PaaS), sobre **una sola máquina física**. Para lograrlo, la virtualización es la pieza central: una LAN virtual privada (`10.10.10.0/24`, dominio interno `paas.internal`) agrupa varias máquinas virtuales, y cada una cumple un papel concreto. La seguridad es un requisito explícito, no un agregado: el sitio web debe servirse también por HTTPS con un certificado emitido por **nuestra propia entidad certificadora** (creada con OpenSSL), el acceso remoto pasa por una VPN y los secretos nunca se guardan en el repositorio.
+
+El enunciado lista muchos servicios posibles, pero la evaluación premia seis resultados concretos. Por eso decidimos implementar exactamente lo que se califica y hacerlo de forma demostrable:
+
+- **WordPress sin contenedores**, con la base de datos MySQL en un servidor distinto del servidor web, servido por HTTP y por HTTPS.
+- **Seis servicios con Docker Compose**: DNS (BIND9), directorio LDAP, correo electrónico, OwnCloud, FTP y SMB.
+- **El mismo CMS desplegado en Kubernetes** (k3s), para comparar ambos modelos de publicación.
+- **Una VPN OpenVPN (TCP, interfaz TAP) en Amazon Web Services**, creada y configurada como infraestructura como código con Terraform y Ansible.
+- **Acceso público al CMS** con el dominio **`examenpaas.tech`**: el tráfico llega a la instancia en AWS y viaja por el túnel VPN hasta el servidor web de la LAN.
+
+Más allá de la nota, el objetivo es entender cada protocolo lo suficiente para explicar qué ocurre en la red cuando algo funciona y, sobre todo, cuando falla. Como la calificación depende de una defensa en la que ambos integrantes deben poder responder sobre cualquier parte, repartimos el trabajo por peso en la rúbrica (Estudiante A: la cadena AWS → VPN → dominio público y los servicios ligados al DNS; Estudiante B: la cadena WordPress → CA → Kubernetes y los servicios de archivos), pero cada cambio pasa por la revisión del otro. Este documento recoge el diseño, la instalación de cada servicio, las decisiones tomadas y lo aprendido en el proceso.
 
 # Ambiente de desarrollo
 
@@ -30,7 +42,8 @@ _Por redactar en el kick-off._
 | Herramienta | Versión | Uso |
 |---|---|---|
 | VirtualBox | | Hipervisor de la LAN virtual |
-| Ubuntu Server | 24.04.x LTS | SO de todas las VMs y de la EC2 |
+| Ubuntu Server | 26.04 LTS (ARM64) | SO de las VMs de la LAN |
+| Ubuntu Server | 24.04 LTS (amd64) | SO de la EC2 (AMI de Canonical) |
 | Terraform | | Aprovisionamiento en AWS |
 | Ansible | | Configuración de OpenVPN y Nginx |
 | Docker / Compose | | 6 servicios en contenedores |

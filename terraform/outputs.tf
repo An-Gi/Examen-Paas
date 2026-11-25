@@ -6,5 +6,5 @@ output "ami_ubuntu" {
 }
 
 # TODO(A) · Fase 2:
-# output "ip_publica" { value = aws_eip.vpn.public_ip }   -> registro A de cms.<dominio>
+# output "ip_publica" { value = aws_eip.vpn.public_ip }   -> registro A de cms.examenpaas.tech
 # output "ssh"        { value = "ssh -i ~/.ssh/examen-paas ubuntu@${aws_eip.vpn.public_ip}" }

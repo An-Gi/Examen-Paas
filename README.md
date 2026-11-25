@@ -6,7 +6,7 @@ Red de servicios segura, virtualizada en una sola máquina física:
 - **6 servicios con Docker Compose** en `docker01`.
 - **WordPress en Kubernetes** (k3s) en `k8s01`.
 - **VPN OpenVPN (TCP/TAP) en AWS**, desplegada con **Terraform + Ansible**.
-- **Acceso público al CMS** con nombre de dominio: `cms.<dominio>` → EC2 (Nginx) → túnel VPN → `web01`.
+- **Acceso público al CMS** con nombre de dominio: `cms.examenpaas.tech` → EC2 (Nginx) → túnel VPN → `web01`.
 
 > **Estado actual: Fase 0 (preparación).** Empezar por [`docs/fase-0.md`](docs/fase-0.md).
 
@@ -14,9 +14,10 @@ Red de servicios segura, virtualizada en una sola máquina física:
 
 | Rol | Nombre | Usuario GitHub | Rubros a cargo | Peso a cargo |
 |---|---|---|---|---|
-| **Estudiante A** | _por completar_ | _por completar_ | VPN con IaC · Acceso público (DNS) · Docker: DNS, LDAP, Email · Extra 1 · Docs §2–§3 | 50 % |
-| **Estudiante B** | _por completar_ | _por completar_ | DB + Web + CMS nativo (con CA) · CMS en Kubernetes · Docker: OwnCloud, FTP, SMB · Extra 2 · Docs §5–§6 + PDF | 50 % |
+| **Estudiante A** | Angie _Apellido_ | [@An-Gi](https://github.com/An-Gi) | VPN con IaC · Acceso público (DNS) · Docker: DNS, LDAP, Email · Extra 1 · Docs §2–§3 | 50 % |
+| **Estudiante B** | _Nombre Apellido_ | [@AleQuesada2012](https://github.com/AleQuesada2012) | DB + Web + CMS nativo (con CA) · CMS en Kubernetes · Docker: OwnCloud, FTP, SMB · Extra 2 · Docs §5–§6 + PDF | 50 % |
 
+Roles y dominio acordados en el kick-off del 2026-11-25. Dominio público: **`examenpaas.tech`** (name.com, GitHub Student Developer Pack).
 Detalle, backlog y horas estimadas: [`docs/division-trabajo.md`](docs/division-trabajo.md).
 **Ambos deben poder explicar todo** (la defensa lo exige): ver el protocolo de transferencia en ese mismo documento.
 
@@ -31,7 +32,7 @@ flowchart LR
   subgraph AWS["AWS · us-east-1"]
     EC2["EC2 t3.micro + IP elástica<br/>OpenVPN TCP/1194 TAP<br/>Nginx reverse proxy"]
   end
-  subgraph HOST["Máquina anfitriona · VirtualBox"]
+  subgraph HOST["Anfitriona · Mac M2 Pro · VirtualBox 7.2 (VMs ARM64)"]
     LAP["Anfitrión 10.10.10.1<br/>cliente VPN"]
     subgraph LAN["LAN host-only 10.10.10.0/24 · paas.internal"]
       DB["db01 · 10.10.10.10<br/>MySQL 8"]
@@ -40,7 +41,7 @@ flowchart LR
       K8S["k8s01 · 10.10.10.40<br/>k3s · WordPress + MySQL"]
     end
   end
-  U -- "cms.dominio (DNS público → EIP)" --> EC2
+  U -- "cms.examenpaas.tech (DNS público → EIP)" --> EC2
   EC2 -- "túnel VPN 10.8.0.0/24" --> WEB
   PH -- "VPN TCP" --> EC2
   LAP -- "VPN TCP" --> EC2

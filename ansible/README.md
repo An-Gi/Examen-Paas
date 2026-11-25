@@ -12,7 +12,7 @@ ansible/
 ├── playbooks/vpn.yml        ← openvpn + nginx_proxy (tag: proxy)
 ├── roles/
 │   ├── openvpn/             ← PKI easy-rsa, server.conf TCP/TAP, NAT, clientes .ovpn
-│   └── nginx_proxy/         ← cms.<dominio> → web01 por el túnel
+│   └── nginx_proxy/         ← cms.examenpaas.tech → web01 por el túnel
 └── clientes-ovpn/           ← .ovpn traídos con fetch (ignorados por Git)
 ```
 
