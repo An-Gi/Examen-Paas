@@ -70,6 +70,9 @@ chequear gitleaks     "gitleaks version"           opcional
 if [[ -r /proc/meminfo ]]; then
   ram_gb=$(awk '/MemTotal/ {printf "%.1f", $2/1024/1024}' /proc/meminfo)
   echo "== RAM total: ${ram_gb} GB (la anfitriona necesita >= 16 GB)"
+elif [[ "$(uname -s)" == Darwin ]]; then
+  ram_gb=$(( $(sysctl -n hw.memsize) / 1024 / 1024 / 1024 ))
+  echo "== RAM total: ${ram_gb} GB · CPU $(uname -m) (anfitriona Mac ARM64: VMs suman 9 GB, ADR-0002)"
 fi
 
 echo
