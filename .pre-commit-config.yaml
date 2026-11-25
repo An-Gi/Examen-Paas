@@ -1,0 +1,22 @@
+# Hooks que corren antes de cada commit. Instalar una vez por equipo:
+#   pipx install pre-commit && pre-commit install && pre-commit run --all-files
+# Si gitleaks bloquea un commit, NO usar --no-verify: quitar el secreto (ver CONTRIBUTING.md).
+repos:
+  - repo: https://github.com/gitleaks/gitleaks
+    rev: v8.21.2
+    hooks:
+      - id: gitleaks
+
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v5.0.0
+    hooks:
+      - id: detect-private-key        # bloquea llaves PEM (ca/private, PKI de OpenVPN)
+      - id: check-added-large-files   # evita subir ISOs, OVAs o discos por error
+        args: ["--maxkb=2048"]
+      - id: check-merge-conflict
+      - id: check-yaml
+        args: ["--allow-multiple-documents"]
+        exclude: ^k8s/manifests/
+      - id: end-of-file-fixer
+      - id: trailing-whitespace
+        args: ["--markdown-linebreak-ext=md"]

@@ -1,0 +1,23 @@
+# Cada PR pide revisión al responsable de la carpeta (ver docs/division-trabajo.md).
+# A = @An-Gi (Angie) · B = @AleQuesada2012
+*                     @An-Gi @AleQuesada2012
+
+# Estudiante A
+/terraform/           @An-Gi
+/ansible/             @An-Gi
+/dns-publico/         @An-Gi
+/docker/01-dns-bind9/ @An-Gi
+/docker/02-ldap/      @An-Gi
+/docker/03-email/     @An-Gi
+/docker/extras/monitoreo/ @An-Gi
+
+# Estudiante B
+/ca/                  @AleQuesada2012
+/nativo/              @AleQuesada2012
+/k8s/                 @AleQuesada2012
+/scripts/vm/          @AleQuesada2012
+/docker/04-owncloud/  @AleQuesada2012
+/docker/05-ftp/       @AleQuesada2012
+/docker/06-smb/       @AleQuesada2012
+/docker/90-respaldo-dhcp/ @AleQuesada2012
+/docker/extras/uptime-kuma/ @AleQuesada2012

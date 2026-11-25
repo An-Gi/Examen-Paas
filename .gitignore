@@ -1,0 +1,69 @@
+# Regla de oro 1: ningún secreto en Git (ver README y docs/convenciones.md).
+# Solo se versionan los *.example; los valores reales viven en el gestor de contraseñas.
+
+# --- Secretos y configuración local --------------------------------------------
+.env
+*.env
+!*.env.example
+*.tfvars
+!*.tfvars.example
+k8s/manifests/01-secret.yaml
+
+# --- Llaves y certificados -----------------------------------------------------
+# CA (Estudiante B): solo certs/ca.crt y certs/<servidor>.crt van a Git.
+ca/private/*
+!ca/private/.gitkeep
+ca/csr/
+ca/newcerts/
+ca/index.txt*
+ca/serial*
+ca/crlnumber*
+*.key
+*.p12
+*.pfx
+id_ed25519*
+id_rsa*
+*.ppk
+
+# --- VPN (Estudiante A) --------------------------------------------------------
+*.ovpn
+ansible/clientes-ovpn/*
+!ansible/clientes-ovpn/.gitkeep
+ansible/inventories/aws.ini
+
+# --- Terraform -----------------------------------------------------------------
+.terraform/
+*.tfstate
+*.tfstate.*
+crash.log
+crash.*.log
+*.tfplan
+# .terraform.lock.hcl SÍ se versiona (fija las versiones de los proveedores).
+
+# --- Datos de contenedores ------------------------------------------------------
+docker/03-email/dms/
+docker/extras/uptime-kuma/data/
+docker/90-respaldo-dhcp/data/*
+!docker/90-respaldo-dhcp/data/dhcpd.conf
+
+# --- Máquinas virtuales (se comparten por Drive, nunca por Git) ------------------
+*.iso
+*.ova
+*.ovf
+*.vdi
+*.vmdk
+*.qcow2
+SHA256SUMS*
+
+# --- Documentación generada -------------------------------------------------------
+docs/build/
+
+# --- Python / editores / SO --------------------------------------------------------
+__pycache__/
+*.pyc
+.venv/
+.DS_Store
+.idea/
+.vscode/
+*.swp
+*~
