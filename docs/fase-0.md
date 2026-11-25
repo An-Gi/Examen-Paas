@@ -367,4 +367,5 @@ ansible --version && ansible localhost -m ping
 | Costos olvidados | Factura inesperada | Presupuesto de USD 5 y `terraform destroy` |
 | Ansible en Windows | `ansible` no existe | WSL2 |
 | Arranque trabado 2 min ("System is booting up" al entrar por SSH) | `systemctl --failed` muestra `systemd-networkd-wait-online` | La NIC de la LAN no tiene DNS: `optional: true` en `/etc/netplan/60-lan-paas.yaml` (`configurar-vm` ya lo pone) |
+| Clones sin la config NAT del instalador (`Cannot find unique matching interface for enp0s8` en `netplan apply`) | `networkctl status enp0s8` muestra `zzzz-dracut-default.network` | El instalador ata la NIC a la MAC de la plantilla; `configurar-vm` reescribe `00-installer-config.yaml` por nombre |
 | VMs ARM con nombres de NIC al revés | `enp0s8` es la NAT, no la LAN | Los scripts detectan la LAN; ver [ADR-0002](decisiones/0002-anfitriona-mac-arm64.md) |

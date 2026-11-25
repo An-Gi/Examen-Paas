@@ -44,6 +44,22 @@ rm -f /etc/ssh/ssh_host_*
 ssh-keygen -A
 systemctl restart ssh
 
+echo "== NIC NAT por nombre (el instalador la ató a la MAC de la plantilla)"
+# 00-installer-config.yaml usa "match: macaddress" + "set-name" con la MAC de la PLANTILLA. Los
+# clones tienen otra MAC, así que esa regla no aplica ("Cannot find unique matching interface") y
+# la NAT solo funcionaba por la regla genérica de dracut. Se reemplaza por una que use el nombre.
+NAT_IFACE=$(ip -o route show default | awk '{print $5; exit}')
+NAT_IFACE="${NAT_IFACE:-enp0s8}"
+cat > /etc/netplan/00-installer-config.yaml <<EOF
+# Generado por configurar-vm — adaptador NAT (salida a Internet), por nombre y no por MAC
+network:
+  version: 2
+  ethernets:
+    ${NAT_IFACE}:
+      dhcp4: true
+EOF
+chmod 600 /etc/netplan/00-installer-config.yaml
+
 echo "== IP fija $IP/24 en $IFACE (sin gateway: Internet sale por el adaptador NAT)"
 cat > /etc/netplan/60-lan-paas.yaml <<EOF
 # Generado por configurar-vm — LAN host-only del examen
