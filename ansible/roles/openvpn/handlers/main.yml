@@ -1,8 +1,12 @@
 ---
 - name: Reiniciar openvpn
   ansible.builtin.systemd:
-    name: openvpn-server@server
+    name: "openvpn-server@{{ instancia.nombre }}"
     state: restarted
+  loop: "{{ openvpn_instancias }}"
+  loop_control:
+    loop_var: instancia
+    label: "{{ instancia.nombre }}"
 
 # Guarda las reglas actuales en /etc/iptables/rules.v4 para que el NAT sobreviva al reinicio
 - name: Persistir iptables

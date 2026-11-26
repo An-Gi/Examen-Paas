@@ -1,6 +1,7 @@
 # Rol openvpn — Estudiante A (Fase 2)
 # Servidor OpenVPN TCP/TAP en la EC2: PKI propia con easy-rsa, NAT hacia Internet y un .ovpn por cliente.
 # Idempotente: la PKI se crea una sola vez (creates:), así que una segunda ejecución da changed=0.
+# Dos instancias: "server" (TCP/TAP, laptop y web01) y "movil" (TCP/TUN, teléfono sin root).
 # Demo: make vpn (dos veces) · en la laptop: curl ifconfig.me == IP elástica · en la EC2: ping 10.8.0.20
 ---
 # 1. Paquetes. iptables-persistent pregunta por debconf al instalarse; se responde antes.
@@ -66,14 +67,18 @@
     - { src: private/server.key, dest: server.key, mode: "0600" }
   notify: Reiniciar openvpn
 
-# 4. Configuración del servidor (TCP + TAP + redirect-gateway)
-- name: Configurar server.conf
+# 4. Configuración de cada instancia: server (TCP/TAP) y movil (TCP/TUN), ambas con redirect-gateway
+- name: Configurar las instancias del servidor
   ansible.builtin.template:
     src: server.conf.j2
-    dest: "{{ openvpn_dir }}/server.conf"
+    dest: "{{ openvpn_dir }}/{{ instancia.nombre }}.conf"
     owner: root
     group: root
     mode: "0644"
+  loop: "{{ openvpn_instancias }}"
+  loop_control:
+    loop_var: instancia
+    label: "{{ instancia.nombre }}"
   notify: Reiniciar openvpn
 
 # 5. client-config-dir: IP fija para los clientes que la piden (web01 -> 10.8.0.20, destino del proxy)
@@ -96,7 +101,7 @@
   loop_control:
     label: "{{ item.nombre }}"
 
-# 6. La EC2 actúa como router: reenvía los paquetes que llegan por tap0 hacia Internet.
+# 6. La EC2 actúa como router: reenvía los paquetes que llegan por tap0/tun0 hacia Internet.
 - name: Activar ip_forward (persistente)
   ansible.posix.sysctl:
     name: net.ipv4.ip_forward
@@ -104,16 +109,20 @@
     sysctl_file: /etc/sysctl.d/99-openvpn.conf
     reload: true
 
-# 7. NAT: los paquetes de 10.8.0.0/24 salen con la IP privada de la EC2 y AWS los traduce a la
-#    IP elástica. Sin MASQUERADE, Internet respondería a 10.8.0.x y la respuesta se perdería.
-- name: MASQUERADE de la red VPN hacia la interfaz pública
+# 7. NAT: los paquetes de 10.8.0.0/24 y 10.9.0.0/24 salen con la IP privada de la EC2 y AWS los
+#    traduce a la IP elástica. Sin MASQUERADE, Internet respondería a 10.x y la respuesta se perdería.
+- name: MASQUERADE de cada red VPN hacia la interfaz pública
   ansible.builtin.iptables:
     table: nat
     chain: POSTROUTING
-    source: "{{ vpn_red }}/{{ vpn_mascara }}"
+    source: "{{ instancia.red }}/{{ vpn_mascara }}"
     out_interface: "{{ ansible_default_ipv4.interface }}"
     jump: MASQUERADE
-    comment: openvpn-nat
+    comment: "openvpn-nat-{{ instancia.nombre }}"
+  loop: "{{ openvpn_instancias }}"
+  loop_control:
+    loop_var: instancia
+    label: "{{ instancia.red }}"
   notify: Persistir iptables
 
 # 8 y 9. Un certificado y un .ovpn autocontenido por cliente, traídos a ansible/clientes-ovpn/
@@ -141,18 +150,26 @@
     loop_var: cliente
     label: "{{ cliente.nombre }}"
 
-# 10. Servicio
-- name: Habilitar y arrancar openvpn-server@server
+# 10. Servicios: un proceso por instancia
+- name: Habilitar y arrancar openvpn-server@<instancia>
   ansible.builtin.systemd:
-    name: openvpn-server@server
+    name: "openvpn-server@{{ instancia.nombre }}"
     enabled: true
     state: started
+  loop: "{{ openvpn_instancias }}"
+  loop_control:
+    loop_var: instancia
+    label: "{{ instancia.nombre }}"
 
 # Aplica ya los cambios de configuración, para que la verificación vea el estado final
 - name: Aplicar reinicios pendientes
   ansible.builtin.meta: flush_handlers
 
-- name: Verificar que OpenVPN escucha en el puerto {{ vpn_puerto }}
+- name: Verificar que cada instancia escucha en su puerto
   ansible.builtin.wait_for:
-    port: "{{ vpn_puerto }}"
+    port: "{{ instancia.puerto }}"
     timeout: 30
+  loop: "{{ openvpn_instancias }}"
+  loop_control:
+    loop_var: instancia
+    label: "{{ instancia.nombre }}/{{ instancia.puerto }}"

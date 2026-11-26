@@ -27,7 +27,7 @@ make proxy          # rol nginx_proxy (Fase 5)
 ## Requisitos de la VPN (enunciado)
 
 - **TCP** e interfaz **TAP**. El tráfico se **rutea** por AWS (`redirect-gateway def1`).
-- Clientes en la **computadora** y el **teléfono**. Ver la pregunta #1 sobre TAP en móviles.
+- Clientes en la **computadora** y el **teléfono**. El teléfono usa una segunda instancia **TUN** (`openvpn-server@movil`, TCP 1195, `10.9.0.0/24`), porque las apps móviles no soportan TAP sin root. El profesor lo aceptó (pregunta #1); TAP con root vale +7,5 % extra.
 - `web01` es cliente con IP fija `10.8.0.20` (CCD) y `pull-filter ignore "redirect-gateway"`, porque solo usa el túnel para el reverse proxy.
 
 ## Terminado cuando (F2)

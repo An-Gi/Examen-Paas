@@ -38,7 +38,7 @@ data "aws_vpc" "default" {
 # declarar el ingreso que se permite.
 resource "aws_security_group" "vpn" {
   name        = "${var.proyecto}-vpn"
-  description = "OpenVPN TCP, Nginx (CMS publico) y SSH restringido"
+  description = "OpenVPN TCP (TAP y TUN), Nginx (CMS publico) y SSH restringido"
   vpc_id      = data.aws_vpc.default.id
 
   tags = { Name = "${var.proyecto}-vpn" }
@@ -55,14 +55,19 @@ resource "aws_vpc_security_group_ingress_rule" "ssh" {
 }
 
 # OpenVPN abierto a todos: la autenticación la hace la PKI (certificado + tls-crypt), no la IP.
-# TCP porque lo exige el enunciado.
+# TCP porque lo exige el enunciado. Dos instancias: TAP (laptop, web01) y TUN (teléfono sin root).
 resource "aws_vpc_security_group_ingress_rule" "openvpn" {
+  for_each = {
+    tap = var.puerto_vpn
+    tun = var.puerto_vpn_movil
+  }
+
   security_group_id = aws_security_group.vpn.id
-  description       = "OpenVPN TCP"
+  description       = "OpenVPN TCP (${upper(each.key)})"
   cidr_ipv4         = "0.0.0.0/0"
   ip_protocol       = "tcp"
-  from_port         = var.puerto_vpn
-  to_port           = var.puerto_vpn
+  from_port         = each.value
+  to_port           = each.value
 }
 
 # HTTP y HTTPS: Nginx publica cms.<dominio> (Fase 5). El 80 también lo usa certbot (HTTP-01).

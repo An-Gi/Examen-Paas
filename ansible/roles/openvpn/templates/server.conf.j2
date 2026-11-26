@@ -1,12 +1,15 @@
 # {{ ansible_managed }}
-# OpenVPN server — Estudiante A (Fase 2). Requisitos del enunciado: TCP + TAP + rutear por AWS.
-port {{ vpn_puerto }}
+# OpenVPN, instancia "{{ instancia.nombre }}" — Estudiante A (Fase 2).
+# Requisitos del enunciado: TCP + TAP + rutear por AWS. La instancia "movil" usa TUN porque las apps
+# de Android/iOS no soportan TAP sin root (aceptado por el profesor, pregunta #1).
+port {{ instancia.puerto }}
 proto {{ vpn_proto }}
-# TAP = capa 2 (tramas Ethernet); el enunciado lo pide en lugar de TUN (capa 3)
-dev {{ vpn_dev }}
+# TAP = capa 2 (tramas Ethernet), TUN = capa 3 (paquetes IP)
+dev {{ instancia.dev }}
 topology subnet
-server {{ vpn_red }} {{ vpn_mascara }}
+server {{ instancia.red }} {{ vpn_mascara }}
 
+# Las dos instancias comparten la misma CA, certificado de servidor y llave tls-crypt
 ca ca.crt
 cert server.crt
 key server.key
@@ -16,9 +19,11 @@ tls-crypt tc.key
 tls-version-min 1.2
 # Mismo valor que el predeterminado de OpenVPN 2.6, explícito para poder explicarlo
 data-ciphers AES-256-GCM:AES-128-GCM:CHACHA20-POLY1305
+{% if instancia.ccd %}
 
 # IP fija por cliente (web01 -> {{ web01_ip_vpn }}, destino del reverse proxy)
 client-config-dir {{ openvpn_ccd_dir }}
+{% endif %}
 
 # Todo el tráfico de los clientes sale por la EC2 (web01 lo ignora con pull-filter)
 push "redirect-gateway def1"
@@ -32,8 +37,10 @@ persist-key
 persist-tun
 user nobody
 group nogroup
-status /var/log/openvpn/status.log
+status /var/log/openvpn/{{ instancia.nombre }}-status.log
 verb 3
+{% if instancia.nombre == 'server' %}
 
 # Plan B (red que bloquea 1194): vpn_puerto=443 y "port-share 127.0.0.1 8443" para que
 # Nginx atienda HTTPS detrás de OpenVPN. Se decide en la Fase 5 si hace falta.
+{% endif %}
