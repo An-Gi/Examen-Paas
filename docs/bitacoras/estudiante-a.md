@@ -11,3 +11,7 @@
 | Fecha | Actividad | Horas | Fase |
 |---|---|---:|---|
 | 2026-11-25 | Kick-off (A+B): lectura del enunciado y rúbrica, roles A/B y dominio público examenpaas.tech | 2.0 | F0 |
+| 2026-11-26 | Herramientas: Homebrew, Terraform (tap de HashiCorp), AWS CLI, Ansible, pre-commit; make verificar ROL=a | 1.0 | F0 |
+| 2026-11-26 | AWS: cuenta, usuario IAM terraform-examen, perfil CLI; diagnóstico del SCP (región us-east-2); terraform plan | 2.5 | F0 |
+| 2026-11-26 | AWS cuenta nueva: MFA del usuario root y presupuesto de USD 5 con alertas | 0.5 | F0 |
+| 2026-11-26 | Dominio examenpaas.tech (GitHub Student Pack): name.com, quitar parking, prueba de registro A con dig | 2.0 | F0 |
