@@ -1,0 +1,39 @@
+# Secretos y archivos generados que NUNCA van a Git (ver docs/convenciones.md § Secretos)
+
+# macOS
+.DS_Store
+
+# Terraform: estado local (contiene IPs, IDs y puede contener secretos), variables reales y caché
+terraform/.terraform/
+terraform/*.tfstate
+terraform/*.tfstate.*
+terraform/terraform.tfvars
+terraform/*.auto.tfvars
+terraform/crash.log
+# .terraform.lock.hcl SÍ se versiona (fija las versiones exactas de los proveedores)
+
+# Ansible: inventario generado por Terraform y perfiles de cliente con llaves privadas
+ansible/inventories/aws.ini
+ansible/clientes-ovpn/*
+!ansible/clientes-ovpn/.gitkeep
+*.ovpn
+!*.ovpn.j2
+
+# CA propia: llaves privadas y certificados emitidos
+ca/private/*
+!ca/private/.gitkeep
+ca/certs/*
+!ca/certs/.gitkeep
+*.key
+*.pem
+*.p12
+
+# Docker y Kubernetes: valores reales
+docker/.env
+k8s/manifests/01-secret.yaml
+
+# Documentación generada
+docs/build/
+
+# Python
+__pycache__/
