@@ -24,10 +24,10 @@ terraform init && terraform validate && terraform plan
 ## Fase 2: terminado cuando
 
 - [ ] `terraform plan` sin cambios después de `apply` (idempotente)
-- [ ] SSH solo desde `cidr_admin`; 1194/TCP, 80 y 443 abiertos al mundo
-- [ ] `terraform output` muestra la IP elástica y se generó `ansible/inventories/aws.ini`
-- [ ] `terraform destroy` deja la cuenta en 0 recursos (incluida la IP elástica)
-- [ ] Cada recurso tiene un comentario que explica por qué existe
+- [x] SSH solo desde `cidr_admin`; 1194/TCP, 1195/TCP (TUN del teléfono), 80 y 443 abiertos al mundo
+- [x] `terraform output` muestra la IP elástica y se generó `ansible/inventories/aws.ini`
+- [x] `terraform destroy` deja la cuenta en 0 recursos (incluida la IP elástica) — verificado con la AWS CLI el 2026-11-26
+- [x] Cada recurso tiene un comentario que explica por qué existe
 
 ## Preguntas probables en la defensa
 

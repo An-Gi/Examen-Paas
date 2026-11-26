@@ -32,11 +32,20 @@ make proxy          # rol nginx_proxy (Fase 5)
 
 ## Terminado cuando (F2)
 
-- [ ] Correr el playbook dos veces da `changed=0` la segunda vez (idempotente)
-- [ ] En la laptop conectada: `curl ifconfig.me` devuelve la IP elástica
-- [ ] `ip -d link show tap0` en el cliente confirma la interfaz TAP
-- [ ] El teléfono conectado navega por AWS (TUN si así se acordó con el profesor)
-- [ ] Desde la EC2: `ping 10.8.0.20` llega a `web01`
+Prueba real del 2026-11-26 (EC2 en us-east-2, OpenVPN 2.6.19):
+
+- [x] Correr el playbook dos veces da `changed=0` la segunda vez (idempotente)
+- [x] Con el perfil `laptop` conectado, la IP de salida es la IP elástica (probado en un contenedor Linux)
+- [x] `ip -d link show tap0` en el cliente confirma la interfaz TAP
+- [x] El teléfono (OpenVPN Connect, perfil TUN) navega por AWS: `checkip.amazonaws.com` muestra la IP elástica
+- [x] Desde la EC2: `ping 10.8.0.20` llega al cliente `web01` (probado en un contenedor; falta repetirlo con la VM `web01`)
+
+> **macOS no soporta TAP** (Apple eliminó las extensiones de kernel; Tunnelblick y OpenVPN Connect solo hacen TUN
+> en Apple Silicon). El cliente TAP "computadora" de la demo tiene que ser Linux (una VM o un contenedor con
+> `--cap-add NET_ADMIN --device /dev/net/tun`) o Windows (adaptador TAP-Windows).
+>
+> Cada `terraform destroy` borra la PKI: el siguiente `apply` + `make vpn` genera una CA nueva y **todos los
+> `.ovpn` cambian** (hay que volver a entregar `web01.ovpn`). La IP elástica también cambia.
 
 ## Preguntas probables en la defensa
 
