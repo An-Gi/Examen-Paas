@@ -8,7 +8,7 @@ Crea en la VPC por defecto de `us-east-1`: key pair, security group, EC2 Ubuntu 
 |---|---|
 | `versions.tf` | Versiones de Terraform y proveedores (`aws`, `local`), proveedor con `default_tags` |
 | `variables.tf` | Región, perfil, tipo de instancia, IP de administración, llave pública |
-| `main.tf` | AMI de Ubuntu (listo en la Fase 0) + recursos de la Fase 2 (TODO) |
+| `main.tf` | AMI de Ubuntu (Fase 0) + key pair, security group, EC2, IP elástica e inventario (Fase 2) |
 | `outputs.tf` | `ami_ubuntu` (Fase 0); IP pública y comando SSH (Fase 2) |
 | `templates/inventario.ini.tftpl` | Plantilla del inventario de Ansible |
 | `terraform.tfvars.example` | Copiar a `terraform.tfvars` (ignorado por Git) |
