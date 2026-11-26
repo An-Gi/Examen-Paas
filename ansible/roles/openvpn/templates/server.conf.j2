@@ -2,6 +2,7 @@
 # OpenVPN server — Estudiante A (Fase 2). Requisitos del enunciado: TCP + TAP + rutear por AWS.
 port {{ vpn_puerto }}
 proto {{ vpn_proto }}
+# TAP = capa 2 (tramas Ethernet); el enunciado lo pide en lugar de TUN (capa 3)
 dev {{ vpn_dev }}
 topology subnet
 server {{ vpn_red }} {{ vpn_mascara }}
@@ -9,14 +10,22 @@ server {{ vpn_red }} {{ vpn_mascara }}
 ca ca.crt
 cert server.crt
 key server.key
+# Sin parámetros DH: el intercambio de llaves es ECDHE (OpenVPN >= 2.4)
 dh none
 tls-crypt tc.key
+tls-version-min 1.2
+# Mismo valor que el predeterminado de OpenVPN 2.6, explícito para poder explicarlo
+data-ciphers AES-256-GCM:AES-128-GCM:CHACHA20-POLY1305
 
+# IP fija por cliente (web01 -> {{ web01_ip_vpn }}, destino del reverse proxy)
 client-config-dir {{ openvpn_ccd_dir }}
 
 # Todo el tráfico de los clientes sale por la EC2 (web01 lo ignora con pull-filter)
 push "redirect-gateway def1"
 push "dhcp-option DNS {{ openvpn_dns_push }}"
+
+# Sin client-to-client: los clientes no se ven entre sí. Nginx corre en el propio servidor
+# y llega a web01 directo por tap0, así que no hace falta exponer web01 a la laptop o al teléfono.
 
 keepalive 10 120
 persist-key
@@ -26,4 +35,5 @@ group nogroup
 status /var/log/openvpn/status.log
 verb 3
 
-# TODO(A): revisar data-ciphers, client-to-client (¿la laptop debe ver a web01?) y plan B port-share 443
+# Plan B (red que bloquea 1194): vpn_puerto=443 y "port-share 127.0.0.1 8443" para que
+# Nginx atienda HTTPS detrás de OpenVPN. Se decide en la Fase 5 si hace falta.

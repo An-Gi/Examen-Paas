@@ -1,0 +1,37 @@
+# Rol openvpn — un cliente (se incluye desde main.yml por cada item de vpn_clientes)
+---
+- name: "Emitir el certificado del cliente {{ cliente.nombre }}"
+  ansible.builtin.command: ./easyrsa --batch build-client-full {{ cliente.nombre }} nopass
+  args:
+    chdir: "{{ openvpn_easyrsa_dir }}"
+    creates: "{{ openvpn_easyrsa_dir }}/pki/issued/{{ cliente.nombre }}.crt"
+
+- name: "Leer certificado y llave de {{ cliente.nombre }}"
+  ansible.builtin.slurp:
+    src: "{{ openvpn_easyrsa_dir }}/pki/{{ item }}"
+  loop:
+    - "issued/{{ cliente.nombre }}.crt"
+    - "private/{{ cliente.nombre }}.key"
+  register: openvpn_cliente_pki
+  no_log: true
+
+- name: "Armar el perfil autocontenido .ovpn de {{ cliente.nombre }}"
+  ansible.builtin.template:
+    src: cliente.ovpn.j2
+    dest: "{{ openvpn_clientes_dir }}/{{ cliente.nombre }}.ovpn"
+    owner: root
+    group: root
+    mode: "0600"
+  vars:
+    ca_crt: "{{ openvpn_comunes.results[0].content | b64decode | trim }}"
+    tls_crypt_key: "{{ openvpn_comunes.results[1].content | b64decode | trim }}"
+    # easy-rsa antepone un volcado en texto al certificado: se deja solo el bloque PEM
+    cliente_crt: "{{ openvpn_cliente_pki.results[0].content | b64decode | regex_search('-----BEGIN CERTIFICATE-----[\\s\\S]+?-----END CERTIFICATE-----') }}"
+    cliente_key: "{{ openvpn_cliente_pki.results[1].content | b64decode | trim }}"
+  no_log: true
+
+- name: "Traer a ansible/clientes-ovpn/ (ignorado por Git) el perfil de {{ cliente.nombre }}"
+  ansible.builtin.fetch:
+    src: "{{ openvpn_clientes_dir }}/{{ cliente.nombre }}.ovpn"
+    dest: "{{ openvpn_clientes_destino_local }}"
+    flat: true

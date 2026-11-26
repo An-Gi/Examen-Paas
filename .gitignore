@@ -19,6 +19,7 @@ ca/index.txt*
 ca/serial*
 ca/crlnumber*
 *.key
+*.pem
 *.p12
 *.pfx
 id_ed25519*

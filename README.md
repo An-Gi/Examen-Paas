@@ -29,7 +29,7 @@ flowchart LR
     U["Usuario público"]
     PH["Teléfono · cliente VPN"]
   end
-  subgraph AWS["AWS · us-east-1"]
+  subgraph AWS["AWS · us-east-2"]
     EC2["EC2 t3.micro + IP elástica<br/>OpenVPN TCP/1194 TAP<br/>Nginx reverse proxy"]
   end
   subgraph HOST["Anfitriona · Mac M2 Pro · VirtualBox 7.2 (VMs ARM64)"]
