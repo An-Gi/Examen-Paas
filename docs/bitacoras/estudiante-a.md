@@ -1,4 +1,4 @@
-# Bitácora — Estudiante A (Angie _Apellido_ · @An-Gi)
+# Bitácora — Estudiante A (Angie Esquivel · @An-Gi)
 
 <!--
   Reglas:

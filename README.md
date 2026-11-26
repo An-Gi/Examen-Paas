@@ -14,8 +14,8 @@ Red de servicios segura, virtualizada en una sola máquina física:
 
 | Rol | Nombre | Usuario GitHub | Rubros a cargo | Peso a cargo |
 |---|---|---|---|---|
-| **Estudiante A** | Angie _Apellido_ | [@An-Gi](https://github.com/An-Gi) | VPN con IaC · Acceso público (DNS) · Docker: DNS, LDAP, Email · Extra 1 · Docs §2–§3 | 50 % |
-| **Estudiante B** | _Nombre Apellido_ | [@AleQuesada2012](https://github.com/AleQuesada2012) | DB + Web + CMS nativo (con CA) · CMS en Kubernetes · Docker: OwnCloud, FTP, SMB · Extra 2 · Docs §5–§6 + PDF | 50 % |
+| **Estudiante A** | Angie Esquivel | [@An-Gi](https://github.com/An-Gi) | VPN con IaC · Acceso público (DNS) · Docker: DNS, LDAP, Email · Extra 1 · Docs §2–§3 | 50 % |
+| **Estudiante B** | Alejandro Quesada | [@AleQuesada2012](https://github.com/AleQuesada2012) | DB + Web + CMS nativo (con CA) · CMS en Kubernetes · Docker: OwnCloud, FTP, SMB · Extra 2 · Docs §5–§6 + PDF | 50 % |
 
 Roles y dominio acordados en el kick-off del 2026-11-25. Dominio público: **`examenpaas.tech`** (name.com, GitHub Student Developer Pack).
 Detalle, backlog y horas estimadas: [`docs/division-trabajo.md`](docs/division-trabajo.md).

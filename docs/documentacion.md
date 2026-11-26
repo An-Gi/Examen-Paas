@@ -2,8 +2,8 @@
 title: "Examen en casa — PaaS"
 subtitle: "Red de servicios segura virtualizada"
 author:
-  - "Estudiante A: Angie _Apellido_ (carné)"
-  - "Estudiante B: _Nombre Apellido_ (carné)"
+  - "Estudiante A: Angie Esquivel (carné)"
+  - "Estudiante B: Alejandro Quesada (carné)"
 date: "II-2026"
 lang: es
 toc: true
