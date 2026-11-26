@@ -2,7 +2,7 @@
 ---
 # Dominios
 dominio_lan: paas.internal
-dominio_publico: "CAMBIAR.xyz"          # TODO(A): completar en la Fase 0 (0.5.5)
+dominio_publico: "examenpaas.tech"     # name.com (Student Pack), acordado en el kick-off 2026-11-25
 cms_fqdn: "cms.{{ dominio_publico }}"
 
 # OpenVPN (requisitos del enunciado: TCP + TAP)

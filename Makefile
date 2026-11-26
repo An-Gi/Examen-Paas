@@ -1,5 +1,5 @@
 # Atajos del proyecto. Uso: make <objetivo>   (make ayuda para ver la lista)
-# Las recetas van con TAB (no .RECIPEPREFIX): el make 3.81 de macOS no lo soporta.
+# Las recetas usan TABULADOR (no '.RECIPEPREFIX'): el make 3.81 de macOS no lo soporta.
 .DEFAULT_GOAL := ayuda
 SHELL := /bin/bash
 

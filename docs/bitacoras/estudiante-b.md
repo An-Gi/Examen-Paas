@@ -1,4 +1,4 @@
-# Bitácora — Estudiante B (_Nombre Apellido_)
+# Bitácora — Estudiante B (Alejandro Quesada · @AleQuesada2012)
 
 <!--
   Reglas:
@@ -10,3 +10,5 @@
 
 | Fecha | Actividad | Horas | Fase |
 |---|---|---:|---|
+| 2026-11-25 | Kick-off (A+B): lectura del enunciado y rúbrica, roles A/B y dominio público examenpaas.tech | 2.0 | F0 |
+| 2026-11-25 | Preparación de las máquinas virtuales a partir de la plantilla, configuración de SSH y dependencias | 2.5 | F0 |

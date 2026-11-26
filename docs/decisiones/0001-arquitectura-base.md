@@ -1,8 +1,9 @@
 # ADR-0001: Arquitectura base y alcance
 
-- **Estado:** Propuesta (pasar a *Aceptada* en el kick-off)
+- **Estado:** Aceptada (kick-off del 2026-11-25)
 - **Fecha:** 2026-11-24
 - **Autor:** Estudiante A + Estudiante B
+- **Modificada por:** [ADR-0002](0002-anfitriona-mac-arm64.md) (anfitriona Mac con VMs Ubuntu 26.04 ARM64, red `hostonlynet`, RAM recortada)
 
 ## Contexto
 

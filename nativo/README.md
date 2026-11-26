@@ -21,7 +21,7 @@
 ## Decisiones pendientes (registrarlas como ADR)
 
 1. **HTTP y HTTPS conviven, sin redirección.** La rúbrica pide "web server sin cifrado" y "con cifrado", así que **no** se redirige `:80` a `:443`.
-2. **`WP_HOME` dinámico.** WordPress guarda su URL (`siteurl`) y redirige a ella. Como el mismo sitio se abre por `http://web01…`, `https://web01…` y `https://cms.<dominio>` (a través de Nginx en EC2), conviene calcular la URL en `wp-config.php`:
+2. **`WP_HOME` dinámico.** WordPress guarda su URL (`siteurl`) y redirige a ella. Como el mismo sitio se abre por `http://web01…`, `https://web01…` y `https://cms.examenpaas.tech` (a través de Nginx en EC2), conviene calcular la URL en `wp-config.php`:
 
    ```php
    // TODO(B): validar en la Fase 1; respetar X-Forwarded-Proto cuando venga del proxy de EC2 (10.8.0.1)

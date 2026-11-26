@@ -3,8 +3,9 @@
 # así que un `up` normal NO lo levanta:
 #   docker compose --env-file ../.env --profile respaldo up -d
 # Requiere network_mode: host (DHCP usa broadcast en la capa 2) y que VirtualBox no tenga
-# su propio DHCP en vboxnet0 (preparar-red-virtualbox.sh ya lo apaga).
-# Demo: una VM nueva con enp0s8 en DHCP recibe una IP del rango 10.10.10.100-150.
+# su propio DHCP en la red host-only (en Linux preparar-red-virtualbox.sh lo apaga).
+# Demo: una VM nueva con su NIC de la LAN en DHCP recibe una IP del rango 10.10.10.100-150.
+# En la anfitriona Mac (ADR-0002) vmnet también sirve DHCP, pero en .2-.9: no se pisan los rangos.
 services:
   dhcpd:
     image: networkboot/dhcpd:latest   # TODO(B): fijar versión
@@ -12,6 +13,6 @@ services:
     profiles: ["respaldo"]
     network_mode: host
     restart: "no"
-    command: ["enp0s8"]
+    command: ["${LAN_IFACE:-enp0s9}"]   # NIC de la LAN de docker01 (enp0s9 en ARM)
     volumes:
       - ./data:/data

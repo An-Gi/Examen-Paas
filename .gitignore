@@ -1,39 +1,70 @@
-# Secretos y archivos generados que NUNCA van a Git (ver docs/convenciones.md § Secretos)
+# Regla de oro 1: ningún secreto en Git (ver README y docs/convenciones.md).
+# Solo se versionan los *.example; los valores reales viven en el gestor de contraseñas.
 
-# macOS
-.DS_Store
+# --- Secretos y configuración local --------------------------------------------
+.env
+*.env
+!*.env.example
+*.tfvars
+!*.tfvars.example
+k8s/manifests/01-secret.yaml
 
-# Terraform: estado local (contiene IPs, IDs y puede contener secretos), variables reales y caché
-terraform/.terraform/
-terraform/*.tfstate
-terraform/*.tfstate.*
-terraform/terraform.tfvars
-terraform/*.auto.tfvars
-terraform/crash.log
-# .terraform.lock.hcl SÍ se versiona (fija las versiones exactas de los proveedores)
-
-# Ansible: inventario generado por Terraform y perfiles de cliente con llaves privadas
-ansible/inventories/aws.ini
-ansible/clientes-ovpn/*
-!ansible/clientes-ovpn/.gitkeep
-*.ovpn
-!*.ovpn.j2
-
-# CA propia: llaves privadas y certificados emitidos
+# --- Llaves y certificados -----------------------------------------------------
+# CA (Estudiante B): solo certs/ca.crt y certs/<servidor>.crt van a Git.
 ca/private/*
 !ca/private/.gitkeep
-ca/certs/*
-!ca/certs/.gitkeep
+ca/csr/
+ca/newcerts/
+ca/index.txt*
+ca/serial*
+ca/crlnumber*
 *.key
 *.pem
 *.p12
+*.pfx
+id_ed25519*
+id_rsa*
+*.ppk
 
-# Docker y Kubernetes: valores reales
-docker/.env
-k8s/manifests/01-secret.yaml
+# --- VPN (Estudiante A) --------------------------------------------------------
+*.ovpn
+ansible/clientes-ovpn/*
+!ansible/clientes-ovpn/.gitkeep
+ansible/inventories/aws.ini
 
-# Documentación generada
+# --- Terraform -----------------------------------------------------------------
+.terraform/
+*.tfstate
+*.tfstate.*
+crash.log
+crash.*.log
+*.tfplan
+# .terraform.lock.hcl SÍ se versiona (fija las versiones de los proveedores).
+
+# --- Datos de contenedores ------------------------------------------------------
+docker/03-email/dms/
+docker/extras/uptime-kuma/data/
+docker/90-respaldo-dhcp/data/*
+!docker/90-respaldo-dhcp/data/dhcpd.conf
+
+# --- Máquinas virtuales (se comparten por Drive, nunca por Git) ------------------
+*.iso
+*.ova
+*.ovf
+*.vdi
+*.vmdk
+*.qcow2
+SHA256SUMS*
+
+# --- Documentación generada -------------------------------------------------------
 docs/build/
 
-# Python
+# --- Python / editores / SO --------------------------------------------------------
 __pycache__/
+*.pyc
+.venv/
+.DS_Store
+.idea/
+.vscode/
+*.swp
+*~

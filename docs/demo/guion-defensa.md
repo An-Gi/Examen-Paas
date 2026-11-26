@@ -5,7 +5,7 @@
 ## Antes de entrar (T−60 min)
 
 - [ ] Snapshot `pre-defensa` en las 4 VMs. Las VMs encendidas y verificadas con `bash docs/demo/chequeo-previo.sh` _(crear en la F7)_.
-- [ ] `terraform apply` hecho, playbook aplicado y `cms.<dominio>` respondiendo desde datos móviles.
+- [ ] `terraform apply` hecho, playbook aplicado y `cms.examenpaas.tech` respondiendo desde datos móviles.
 - [ ] CA importada en el navegador de la demo. Teléfono con el perfil VPN cargado.
 - [ ] Este archivo abierto, con los comandos listos para copiar y pegar.
 - [ ] Plan B de red: hotspot propio y OpenVPN en TCP 443.
@@ -19,7 +19,7 @@
 | 7–11 | DB + Web + CMS nativo + CA | 20 % | B | HTTP, HTTPS con candado, `mysql` remoto, web01 sin MySQL |
 | 11–15 | VPN con IaC | 20 % | A | `terraform plan`, playbook, `curl ifconfig.me` = IP de AWS, teléfono |
 | 15–17 | CMS en Kubernetes | 10 % | B | `kubectl get all`, `scale`, borrar un pod |
-| 17–19 | Acceso público con dominio | 10 % | A | `cms.<dominio>` desde el teléfono con datos móviles |
+| 17–19 | Acceso público con dominio | 10 % | A | `cms.examenpaas.tech` desde el teléfono con datos móviles |
 | 19–20 | Extras | +10 % | A · B | Grafana · Uptime Kuma |
 
 > En los ensayos se **invierten los roles** (A presenta lo de B y viceversa), porque el profesor puede preguntarle a cualquiera.

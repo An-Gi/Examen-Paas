@@ -6,7 +6,7 @@ output "ami_ubuntu" {
 }
 
 output "ip_publica" {
-  description = "IP elástica de la EC2: registro A de cms.<dominio> y 'remote' de los .ovpn"
+  description = "IP elástica de la EC2: registro A de cms.examenpaas.tech y 'remote' de los .ovpn"
   value       = aws_eip.vpn.public_ip
 }
 

@@ -5,7 +5,7 @@
 ## Flujo
 
 ```
-Navegador (Internet) ──DNS──▶ cms.<dominio>  A  <IP elástica>
+Navegador (Internet) ──DNS──▶ cms.examenpaas.tech  A  <IP elástica>
         │
         └──HTTP/HTTPS──▶ Nginx en EC2 ──túnel VPN (TAP)──▶ web01 10.8.0.20 (Apache + WordPress)
 ```
@@ -20,7 +20,7 @@ Navegador (Internet) ──DNS──▶ cms.<dominio>  A  <IP elástica>
 ## Pasos
 
 1. `terraform apply` (F2) → anotar la IP elástica, que no cambia mientras el recurso exista.
-2. Crear el registro A y verificarlo: `dig +short cms.<dominio>` y `dig @1.1.1.1 +short cms.<dominio>`.
+2. Crear el registro A y verificarlo: `dig +short cms.examenpaas.tech` y `dig @1.1.1.1 +short cms.examenpaas.tech`.
 3. B confirma que `web01` es cliente VPN con `10.8.0.20` y que WordPress tiene el `WP_HOME` dinámico.
 4. `make proxy` (rol `nginx_proxy`).
 5. HTTPS público: `nginx_proxy_certbot: true` y `make proxy` de nuevo.
@@ -34,7 +34,7 @@ Navegador (Internet) ──DNS──▶ cms.<dominio>  A  <IP elástica>
 
 ## Terminado cuando
 
-- [ ] `curl -I https://cms.<dominio>` → `200` desde fuera de la LAN
+- [ ] `curl -I https://cms.examenpaas.tech` → `200` desde fuera de la LAN
 - [ ] Al apagar el cliente VPN de `web01`, el sitio deja de responder (prueba de que pasa por el túnel)
 - [ ] El candado público es válido (Let's Encrypt)
 

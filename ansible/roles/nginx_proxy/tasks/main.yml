@@ -1,5 +1,5 @@
 # Rol nginx_proxy — Estudiante A (Fase 5)
-# cms.<dominio> (IP elástica) → Nginx en EC2 → túnel VPN → web01 (10.8.0.20)
+# cms.examenpaas.tech (IP elástica) → Nginx en EC2 → túnel VPN → web01 (10.8.0.20)
 ---
 - name: "TODO(A): el rol nginx_proxy todavía no está implementado"
   ansible.builtin.debug:

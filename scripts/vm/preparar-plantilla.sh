@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Prepara la VM plantilla (Ubuntu Server 24.04) antes de tomar el snapshot "base".
+# Prepara la VM plantilla (Ubuntu Server 26.04 LTS ARM64, ADR-0002) antes de tomar el snapshot "base".
 # Ejecutar DENTRO de la plantilla: sudo bash preparar-plantilla.sh llaves.pub
 # Responsable: Estudiante B (Fase 0, paso 0.4.5)
 #
@@ -9,7 +9,7 @@ set -euo pipefail
 
 [[ $EUID -eq 0 ]] || { echo "Ejecutar con sudo"; exit 1; }
 LLAVES="${1:?Uso: sudo bash preparar-plantilla.sh llaves.pub}"
-USUARIO="${SUDO_USER:-paas}"
+USUARIO="${SUDO_USER:-zekken}"   # quien ejecuta sudo (convenciones.md: zekken)
 DIR_SCRIPT="$(cd "$(dirname "$0")" && pwd)"
 
 echo "== Paquetes base"
@@ -53,8 +53,8 @@ echo "== Limpieza para clonar"
 apt-get -y autoremove && apt-get clean
 truncate -s 0 /etc/machine-id          # cada clon genera el suyo (configurar-vm lo fuerza)
 rm -f /var/lib/dbus/machine-id
-# La IP temporal 10.10.10.5 (puesta con `ip addr add`) no es persistente: desaparece al apagar.
+# La IP temporal 10.10.10.50 (puesta con `ip addr add`) no es persistente: desaparece al apagar.
 
 echo
 echo "Plantilla lista. Siguiente: 'sudo poweroff' y en la anfitriona:"
-echo "  VBoxManage snapshot ubuntu2404-plantilla take base"
+echo "  VBoxManage snapshot ubuntu2604-plantilla take base"

@@ -5,7 +5,7 @@
 # systemd-resolved ocupa 127.0.0.53:53 en Ubuntu: por eso se publica solo en la IP de la LAN.
 services:
   bind9:
-    image: internetsystemsconsortium/bind9:9.20   # TODO(A): confirmar el tag vigente
+    image: internetsystemsconsortium/bind9:9.20   # TODO(A): sin arm64 -> ubuntu/bind9:9.20-26.04 (ADR-0002)
     container_name: bind9
     restart: unless-stopped
     environment:

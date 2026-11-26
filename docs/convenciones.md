@@ -6,24 +6,25 @@ Si algo de aquí cambia, se cambia **primero en este archivo**, en un PR, y desp
 
 | Campo | Valor |
 |---|---|
-| Equipo elegido | _por completar en el kick-off (de quién, RAM, CPU, SO)_ |
-| Hipervisor | VirtualBox 7.x |
-| Red host-only | `vboxnet0` · anfitrión `10.10.10.1/24` · sin DHCP |
+| Equipo elegido | MacBook de B · Apple M2 Pro (arm64) · 16 GB RAM · macOS 26 ([ADR-0002](decisiones/0002-anfitriona-mac-arm64.md)) |
+| Hipervisor | VirtualBox 7.2 (Apple Silicon) · invitados **Ubuntu Server 26.04 LTS ARM64** |
+| Red host-only | `hostonlynet` **`lan-paas`** (macOS no tiene `vboxnet0`) · anfitrión `10.10.10.1/24` · IPs fijas en las VMs |
 
 ## Inventario de nodos
 
 | Nodo | IP LAN | NIC LAN | Rol | RAM | CPU | Responsable |
 |---|---|---|---|---|---|---|
-| anfitrión | 10.10.10.1 | vboxnet0 | Navegador de la demo, cliente VPN | — | — | A + B |
-| `db01` | 10.10.10.10 | enp0s8 | MySQL 8 nativo | 1 GB | 1 | B |
-| `web01` | 10.10.10.20 | enp0s8 | Apache + PHP + WordPress, cliente VPN | 2 GB | 1 | B |
-| `docker01` | 10.10.10.30 | enp0s8 | Docker Compose (6 servicios + extras) | 4 GB | 2 | A + B |
-| `k8s01` | 10.10.10.40 | enp0s8 | k3s + WordPress | 4 GB | 2 | B |
+| anfitrión | 10.10.10.1 | `bridgeN` (vmnet) | Navegador de la demo, cliente VPN | — | — | A + B |
+| `db01` | 10.10.10.10 | enp0s9 | MySQL 8 nativo | 1 GB | 1 | B |
+| `web01` | 10.10.10.20 | enp0s9 | Apache + PHP + WordPress, cliente VPN | 1,5 GB | 1 | B |
+| `docker01` | 10.10.10.30 | enp0s9 | Docker Compose (6 servicios + extras) | 3,5 GB | 2 | A + B |
+| `k8s01` | 10.10.10.40 | enp0s9 | k3s + WordPress | 3 GB | 2 | B |
 | EC2 `vpn` | IP elástica | ens5 | OpenVPN + Nginx reverse proxy | t3.micro | 2 | A |
 
-- `enp0s3` = NAT (salida a Internet, ruta por defecto). `enp0s8` = LAN, sin gateway.
-- Rango reservado para DHCP de respaldo: `10.10.10.100–150`. Nunca usar esas IPs como fijas.
-- Usuario de las VMs: `paas`, con acceso solo por llave SSH.
+- VMs ARM64 ([ADR-0002](decisiones/0002-anfitriona-mac-arm64.md), comprobado en la plantilla): **`enp0s8` = NAT** (salida a Internet, ruta por defecto) y **`enp0s9` = LAN**, sin gateway. Es al revés que en x86 (`enp0s3` NAT, `enp0s8` LAN); los scripts detectan la NIC de la LAN en lugar de suponer el nombre.
+- RAM total de las VMs: 9 GB (recortada para la anfitriona de 16 GB).
+- Rango `10.10.10.2–9`: DHCP de vmnet en `lan-paas` (el anfitrión toma `.1`). Rango `10.10.10.100–150`: DHCP de respaldo. Nunca usar esas IPs como fijas.
+- Usuario de las VMs: **`zekken`** (creado al instalar la plantilla y heredado por los clones), con acceso solo por llave SSH y `sudo`.
 
 ## Red VPN
 
@@ -40,8 +41,8 @@ Si algo de aquí cambia, se cambia **primero en este archivo**, en un PR, y desp
 | Dominio | Uso |
 |---|---|
 | `paas.internal` | Zona interna en BIND9 (`docker01`). Se usa `.internal` porque ICANN lo reservó en 2024 para redes privadas, así que nunca va a chocar con un dominio público. |
-| `<dominio>.xyz` | **Público**, por completar: `__________` |
-| `cms.<dominio>.xyz` | Registro A → IP elástica de EC2 → Nginx → VPN → `web01` |
+| `examenpaas.tech` | **Público.** Registrado en name.com con el GitHub Student Developer Pack (2026-11-25). Sin registros ni redirecciones aún |
+| `cms.examenpaas.tech` | Registro A → IP elástica de EC2 → Nginx → VPN → `web01` |
 
 | Nombre interno | Apunta a | Servicio |
 |---|---|---|
