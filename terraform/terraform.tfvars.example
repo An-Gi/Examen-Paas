@@ -1,5 +1,5 @@
 # Copiar a terraform.tfvars (ignorado por Git) y completar.
-region             = "us-east-1"
+region             = "us-east-2"
 perfil_aws         = "examen-paas"
 tipo_instancia     = "t3.micro"
 ruta_llave_publica = "~/.ssh/examen-paas.pub"

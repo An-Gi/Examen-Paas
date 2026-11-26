@@ -2,7 +2,7 @@
 
 **Responsable:** Estudiante A · **Fases:** 0 (prueba de humo) y 2 · **Rubro:** VPN con IaC (20 %)
 
-Crea en la VPC por defecto de `us-east-1`: key pair, security group, EC2 Ubuntu 24.04 (t3.micro) e IP elástica. También **genera el inventario de Ansible** (`../ansible/inventories/aws.ini`) con `local_file`, así Ansible siempre apunta a la IP actual.
+Crea en la VPC por defecto de `us-east-2`: key pair, security group, EC2 Ubuntu 24.04 (t3.micro) e IP elástica. También **genera el inventario de Ansible** (`../ansible/inventories/aws.ini`) con `local_file`, así Ansible siempre apunta a la IP actual.
 
 | Archivo | Contenido |
 |---|---|

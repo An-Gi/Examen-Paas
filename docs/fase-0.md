@@ -258,7 +258,7 @@ VBoxManage export ubuntu2404-plantilla -o ubuntu2404-plantilla.ova   # compartir
 - [ ] Configurar el perfil y probarlo:
 
   ```bash
-  aws configure --profile examen-paas        # región us-east-1, salida json
+  aws configure --profile examen-paas        # región us-east-2, salida json
   aws sts get-caller-identity --profile examen-paas
   ```
 
