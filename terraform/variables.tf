@@ -2,9 +2,11 @@
 # Valores reales en terraform.tfvars (ignorado por Git). Ejemplo: terraform.tfvars.example
 
 variable "region" {
+  # Las cuentas creadas con "Sign up for AWS (new)" (proyectos) solo permiten EC2 en la región
+  # asignada según el país de contacto: us-east-2 para América. us-east-1 da "explicit deny in a SCP".
   description = "Región de AWS"
   type        = string
-  default     = "us-east-1"
+  default     = "us-east-2"
 }
 
 variable "perfil_aws" {

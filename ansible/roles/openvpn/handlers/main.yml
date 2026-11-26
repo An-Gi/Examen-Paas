@@ -3,3 +3,8 @@
   ansible.builtin.systemd:
     name: openvpn-server@server
     state: restarted
+
+# Guarda las reglas actuales en /etc/iptables/rules.v4 para que el NAT sobreviva al reinicio
+- name: Persistir iptables
+  ansible.builtin.command: netfilter-persistent save
+  changed_when: true

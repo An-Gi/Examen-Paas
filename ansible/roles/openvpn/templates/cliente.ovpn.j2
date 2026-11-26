@@ -1,4 +1,5 @@
-# Cliente OpenVPN: {{ item.nombre }} — generado por Ansible (rol openvpn)
+# Cliente OpenVPN: {{ cliente.nombre }} — generado por Ansible (rol openvpn). Contiene la llave privada:
+# no subir a Git ni compartir por chat. Uso: sudo openvpn --config {{ cliente.nombre }}.ovpn
 client
 dev {{ vpn_dev }}
 proto {{ vpn_proto }}
@@ -7,22 +8,24 @@ resolv-retry infinite
 nobind
 persist-key
 persist-tun
+# Verifica que el otro extremo tenga un certificado de servidor (evita que otro cliente se haga pasar por él)
 remote-cert-tls server
 verb 3
-{% if item.sin_redirect_gateway | default(false) %}
-# Este cliente solo usa el túnel para recibir el tráfico del reverse proxy
+{% if cliente.sin_redirect_gateway | default(false) %}
+# Este cliente solo usa el túnel para recibir el tráfico del reverse proxy:
+# su salida a Internet y su DNS siguen siendo los de la LAN
 pull-filter ignore "redirect-gateway"
 pull-filter ignore "dhcp-option"
 {% endif %}
 <ca>
-{{ ca_crt | default('TODO(A): contenido de ca.crt') }}
+{{ ca_crt }}
 </ca>
 <cert>
-{{ cliente_crt | default('TODO(A): certificado del cliente') }}
+{{ cliente_crt }}
 </cert>
 <key>
-{{ cliente_key | default('TODO(A): llave del cliente') }}
+{{ cliente_key }}
 </key>
 <tls-crypt>
-{{ tls_crypt_key | default('TODO(A): contenido de tc.key') }}
+{{ tls_crypt_key }}
 </tls-crypt>

@@ -1,24 +1,158 @@
 # Rol openvpn — Estudiante A (Fase 2)
-# Cada TODO es una o varias tareas. Usar módulos idempotentes (apt, template, sysctl, command con creates:).
+# Servidor OpenVPN TCP/TAP en la EC2: PKI propia con easy-rsa, NAT hacia Internet y un .ovpn por cliente.
+# Idempotente: la PKI se crea una sola vez (creates:), así que una segunda ejecución da changed=0.
+# Demo: make vpn (dos veces) · en la laptop: curl ifconfig.me == IP elástica · en la EC2: ping 10.8.0.20
 ---
-- name: "TODO(A): el rol openvpn todavía no está implementado"
-  ansible.builtin.debug:
-    msg: "Implementar los pasos 1-9 de roles/openvpn/tasks/main.yml"
+# 1. Paquetes. iptables-persistent pregunta por debconf al instalarse; se responde antes.
+- name: Preconfigurar iptables-persistent para que no pregunte
+  ansible.builtin.debconf:
+    name: iptables-persistent
+    question: "iptables-persistent/{{ item }}"
+    vtype: boolean
+    value: "false"
+  loop: [autosave_v4, autosave_v6]
 
-# TODO(A) 1. Paquetes: openvpn, easy-rsa, iptables-persistent (debconf para que no pregunte)
-# TODO(A) 2. PKI con easy-rsa en {{ openvpn_easyrsa_dir }}:
-#            init-pki, build-ca nopass, build-server-full server nopass
-#            (usar `creates:` para que no se regenere en cada ejecución)
-#            tls-crypt: openvpn --genkey secret {{ openvpn_dir }}/tc.key
-#            Con OpenVPN 2.6 se puede usar "dh none" (ECDHE): no hace falta generar DH.
-# TODO(A) 3. Copiar ca.crt, server.crt y server.key a {{ openvpn_dir }}
-# TODO(A) 4. template server.conf.j2 -> {{ openvpn_dir }}/server.conf  (notify: reiniciar openvpn)
-# TODO(A) 5. client-config-dir: un archivo por cliente con ip_fija
-#            ({{ openvpn_ccd_dir }}/web01 -> "ifconfig-push 10.8.0.20 255.255.255.0")
-# TODO(A) 6. sysctl net.ipv4.ip_forward=1 (ansible.posix.sysctl, persistente)
-# TODO(A) 7. NAT: iptables -t nat -A POSTROUTING -s {{ vpn_red }}/24 -o {{ ansible_default_ipv4.interface }} -j MASQUERADE
-#            (en EC2 la interfaz suele ser ens5) y persistirlo con netfilter-persistent
-# TODO(A) 8. Por cada item de vpn_clientes: build-client-full <nombre> nopass y
-#            template cliente.ovpn.j2 -> /root/clientes/<nombre>.ovpn
-# TODO(A) 9. fetch de los .ovpn a {{ openvpn_clientes_destino_local }} (flat: true)
-# TODO(A) 10. Servicio openvpn-server@server habilitado y arrancado
+- name: Instalar openvpn, easy-rsa e iptables-persistent
+  ansible.builtin.apt:
+    name: [openvpn, easy-rsa, iptables-persistent]
+    state: present
+    update_cache: true
+    cache_valid_time: 3600
+
+# 2. PKI con easy-rsa. La CA de la VPN es independiente de la CA de ca/ (la de B, para HTTPS):
+#    vive y muere con la EC2, y si se filtra no compromete los certificados web.
+- name: Crear el directorio de easy-rsa
+  ansible.builtin.command: make-cadir {{ openvpn_easyrsa_dir }}
+  args:
+    creates: "{{ openvpn_easyrsa_dir }}/easyrsa"
+
+- name: Inicializar la PKI
+  ansible.builtin.command: ./easyrsa --batch init-pki
+  args:
+    chdir: "{{ openvpn_easyrsa_dir }}"
+    creates: "{{ openvpn_easyrsa_dir }}/pki"
+
+- name: Crear la CA de la VPN (sin passphrase para poder automatizar)
+  ansible.builtin.command: ./easyrsa --batch --req-cn="{{ openvpn_ca_cn }}" build-ca nopass
+  args:
+    chdir: "{{ openvpn_easyrsa_dir }}"
+    creates: "{{ openvpn_easyrsa_dir }}/pki/ca.crt"
+
+- name: Emitir el certificado del servidor
+  ansible.builtin.command: ./easyrsa --batch build-server-full server nopass
+  args:
+    chdir: "{{ openvpn_easyrsa_dir }}"
+    creates: "{{ openvpn_easyrsa_dir }}/pki/issued/server.crt"
+
+# tls-crypt cifra y autentica el canal de control: sin esta llave el servidor ni siquiera
+# responde al handshake TLS (protege contra escaneos y DoS). Con OpenVPN 2.6 se usa "dh none" (ECDHE).
+- name: Generar la llave tls-crypt
+  ansible.builtin.command: openvpn --genkey secret {{ openvpn_dir }}/tc.key
+  args:
+    creates: "{{ openvpn_dir }}/tc.key"
+
+# 3. Archivos que lee el servidor (WorkingDirectory de openvpn-server@server = {{ openvpn_dir }})
+- name: Copiar CA, certificado y llave del servidor
+  ansible.builtin.copy:
+    src: "{{ openvpn_easyrsa_dir }}/pki/{{ item.src }}"
+    dest: "{{ openvpn_dir }}/{{ item.dest }}"
+    remote_src: true
+    owner: root
+    group: root
+    mode: "{{ item.mode }}"
+  loop:
+    - { src: ca.crt, dest: ca.crt, mode: "0644" }
+    - { src: issued/server.crt, dest: server.crt, mode: "0644" }
+    - { src: private/server.key, dest: server.key, mode: "0600" }
+  notify: Reiniciar openvpn
+
+# 4. Configuración del servidor (TCP + TAP + redirect-gateway)
+- name: Configurar server.conf
+  ansible.builtin.template:
+    src: server.conf.j2
+    dest: "{{ openvpn_dir }}/server.conf"
+    owner: root
+    group: root
+    mode: "0644"
+  notify: Reiniciar openvpn
+
+# 5. client-config-dir: IP fija para los clientes que la piden (web01 -> 10.8.0.20, destino del proxy)
+- name: Crear el directorio CCD
+  ansible.builtin.file:
+    path: "{{ openvpn_ccd_dir }}"
+    state: directory
+    owner: root
+    group: root
+    mode: "0755"
+
+- name: IP fija por cliente (ifconfig-push)
+  ansible.builtin.copy:
+    dest: "{{ openvpn_ccd_dir }}/{{ item.nombre }}"
+    content: "ifconfig-push {{ item.ip_fija }} {{ vpn_mascara }}\n"
+    owner: root
+    group: root
+    mode: "0644"
+  loop: "{{ vpn_clientes | selectattr('ip_fija', 'defined') | list }}"
+  loop_control:
+    label: "{{ item.nombre }}"
+
+# 6. La EC2 actúa como router: reenvía los paquetes que llegan por tap0 hacia Internet.
+- name: Activar ip_forward (persistente)
+  ansible.posix.sysctl:
+    name: net.ipv4.ip_forward
+    value: "1"
+    sysctl_file: /etc/sysctl.d/99-openvpn.conf
+    reload: true
+
+# 7. NAT: los paquetes de 10.8.0.0/24 salen con la IP privada de la EC2 y AWS los traduce a la
+#    IP elástica. Sin MASQUERADE, Internet respondería a 10.8.0.x y la respuesta se perdería.
+- name: MASQUERADE de la red VPN hacia la interfaz pública
+  ansible.builtin.iptables:
+    table: nat
+    chain: POSTROUTING
+    source: "{{ vpn_red }}/{{ vpn_mascara }}"
+    out_interface: "{{ ansible_default_ipv4.interface }}"
+    jump: MASQUERADE
+    comment: openvpn-nat
+  notify: Persistir iptables
+
+# 8 y 9. Un certificado y un .ovpn autocontenido por cliente, traídos a ansible/clientes-ovpn/
+- name: Leer los archivos comunes a todos los clientes
+  ansible.builtin.slurp:
+    src: "{{ item }}"
+  loop:
+    - "{{ openvpn_dir }}/ca.crt"
+    - "{{ openvpn_dir }}/tc.key"
+  register: openvpn_comunes
+  no_log: true
+
+- name: Crear el directorio de perfiles de cliente (solo root, contienen llaves privadas)
+  ansible.builtin.file:
+    path: "{{ openvpn_clientes_dir }}"
+    state: directory
+    owner: root
+    group: root
+    mode: "0700"
+
+- name: Generar los clientes
+  ansible.builtin.include_tasks: cliente.yml
+  loop: "{{ vpn_clientes }}"
+  loop_control:
+    loop_var: cliente
+    label: "{{ cliente.nombre }}"
+
+# 10. Servicio
+- name: Habilitar y arrancar openvpn-server@server
+  ansible.builtin.systemd:
+    name: openvpn-server@server
+    enabled: true
+    state: started
+
+# Aplica ya los cambios de configuración, para que la verificación vea el estado final
+- name: Aplicar reinicios pendientes
+  ansible.builtin.meta: flush_handlers
+
+- name: Verificar que OpenVPN escucha en el puerto {{ vpn_puerto }}
+  ansible.builtin.wait_for:
+    port: "{{ vpn_puerto }}"
+    timeout: 30

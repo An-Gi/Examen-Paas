@@ -2,13 +2,13 @@
 
 **Responsable:** Estudiante A · **Fases:** 0 (prueba de humo) y 2 · **Rubro:** VPN con IaC (20 %)
 
-Crea en la VPC por defecto de `us-east-1`: key pair, security group, EC2 Ubuntu 24.04 (t3.micro) e IP elástica. También **genera el inventario de Ansible** (`../ansible/inventories/aws.ini`) con `local_file`, así Ansible siempre apunta a la IP actual.
+Crea en la VPC por defecto de `us-east-2`: key pair, security group, EC2 Ubuntu 24.04 (t3.micro) e IP elástica. También **genera el inventario de Ansible** (`../ansible/inventories/aws.ini`) con `local_file`, así Ansible siempre apunta a la IP actual.
 
 | Archivo | Contenido |
 |---|---|
 | `versions.tf` | Versiones de Terraform y proveedores (`aws`, `local`), proveedor con `default_tags` |
 | `variables.tf` | Región, perfil, tipo de instancia, IP de administración, llave pública |
-| `main.tf` | AMI de Ubuntu (listo en la Fase 0) + recursos de la Fase 2 (TODO) |
+| `main.tf` | AMI de Ubuntu (Fase 0) + key pair, security group, EC2, IP elástica e inventario (Fase 2) |
 | `outputs.tf` | `ami_ubuntu` (Fase 0); IP pública y comando SSH (Fase 2) |
 | `templates/inventario.ini.tftpl` | Plantilla del inventario de Ansible |
 | `terraform.tfvars.example` | Copiar a `terraform.tfvars` (ignorado por Git) |

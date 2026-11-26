@@ -1,0 +1,5 @@
+# Colecciones que usan los roles (ya vienen con el paquete "ansible"; necesario con ansible-core).
+# Instalar: ansible-galaxy collection install -r requirements.yml
+---
+collections:
+  - name: ansible.posix
