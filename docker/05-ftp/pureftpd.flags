@@ -1,0 +1,6 @@
+--chrooteveryone
+--maxclientsnumber 20
+--maxclientsperip 10
+--dontresolve
+--prohibitdotfileswrite
+--customerproof
