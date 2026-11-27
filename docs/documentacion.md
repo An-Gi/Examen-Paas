@@ -213,6 +213,50 @@ La instalación de WordPress (título del sitio y administrador) se terminó en 
 
 ## CMS en Kubernetes (k3s) — Estudiante B
 
+k3s **v1.37.2+k3s1** de un nodo en `k8s01` (10.10.10.40), instalado con `k8s/instalar-k3s.sh`.
+
+- **Versión fija** (`INSTALL_K3S_VERSION`), para que el clúster del ensayo sea el mismo que el de la defensa.
+- **`--node-ip 10.10.10.40 --flannel-iface enp0s9`**: el clúster usa la LAN y no la NIC NAT. El nombre de la NIC se detecta por la IP, porque en ARM está al revés que en x86 (ADR-0002).
+- **`--write-kubeconfig-mode 600`**: el kubeconfig es una credencial de administrador del clúster. Queda solo para root y se copia a `~/.kube/config` de `zekken` (600).
+- k3s trae **Traefik** como Ingress Controller, el aprovisionador **local-path** para volúmenes, CoreDNS y metrics-server.
+
+### Diseño
+
+| Objeto | Para qué |
+|---|---|
+| `Namespace cms` | Agrupa todo el CMS; borrarlo borra el CMS completo |
+| `Secret wordpress-db` | Contraseña de `wp_k8s` y las 8 *salts* de WordPress. Lo crea `k8s/crear-secret.sh` (pide la contraseña por teclado), así que no existe ningún archivo con credenciales |
+| `Service mysql` sin selector + `EndpointSlice` a `10.10.10.10:3306` | La base es **externa** (ADR-0003 §4). Los pods usan el nombre `mysql`, que resuelve a `10.43.105.80` (ClusterIP), y el tráfico llega a `db01` |
+| `PVC wordpress-contenido` (2 Gi, `local-path`, RWO) | `/var/www/html` (núcleo, temas, subidas). Sobrevive a que se borren los pods |
+| `Deployment wordpress` (`wordpress:7.1.5-php8.5-apache`) | Misma versión de WordPress y PHP que `web01`. Recursos, `readinessProbe` HTTP y `livenessProbe` TCP |
+| `Service wordpress` + `Ingress` (Traefik) | `http://cms-k8s.paas.internal` → pods; Traefik enruta por el encabezado `Host` |
+
+**Decisiones:**
+- **Base de datos fuera del clúster.**
+  - El enunciado dice que la base del CMS no puede estar en el mismo servidor. Con un clúster de un nodo, un MySQL en StatefulSet estaría en `k8s01`, igual que WordPress.
+  - Al salir del clúster, flannel hace SNAT a la IP del nodo. Por eso `db01` ve `10.10.10.40`, y el usuario `wp_k8s@10.10.10.40` y la regla de `ufw` alcanzan para autorizar a todos los pods (y a nadie más).
+- **Salts en el Secret.** La imagen oficial genera salts aleatorias por contenedor si no se le dan. Con varias réplicas, una cookie de sesión firmada en un pod no sería válida en otro, y el usuario "perdería la sesión" al azar.
+- **readiness ≠ liveness.**
+  - La de preparación pide `/` (PHP + base): si `db01` cae, el pod deja de recibir tráfico.
+  - La de vida solo abre el puerto 80: reiniciar el pod no arreglaría la base, y reiniciarlo en bucle empeoraría todo.
+- **Una réplica al instalar.** Con el PVC vacío, la imagen copia WordPress en `/var/www/html` al arrancar, y dos pods a la vez competirían por escribir los mismos archivos. Después de la primera instalación se escala sin problema.
+- **`ReadWriteOnce` con 3 réplicas** funciona porque el clúster tiene un solo nodo. En multinodo haría falta un volumen RWX (por ejemplo, NFS).
+
+### Pruebas (2026-11-27)
+
+| Prueba | Resultado |
+|---|---|
+| `kubectl apply -k manifests/ --dry-run=server` y luego `apply` | Todos los objetos creados; `rollout status` en ~50 s (incluye descargar la imagen) |
+| `curl -H 'Host: cms-k8s.paas.internal' http://10.10.10.40/` | `302 → /wp-admin/install.php` |
+| `curl http://10.10.10.40/` (sin ese `Host`) | `404` de Traefik: el Ingress enruta por nombre |
+| Conexión desde el pod (`mysqli` con las variables del Secret) | `conectado como wp_k8s@10.10.10.40 a wordpress_k8s en db01` |
+| `kubectl -n cms scale deploy/wordpress --replicas=3` | 3/3 `Ready` en 12 s |
+| `kubectl -n cms delete pod <uno>` | El ReplicaSet crea otro; 3/3 `Ready` en 13 s |
+| `docker01 → db01:3306` | Bloqueado por `ufw` (solo `web01` y `k8s01` llegan) |
+| Instalación de WordPress en el navegador del Mac (`http://cms-k8s.paas.internal`) y una entrada de prueba | Sitio "WP in K8s", entrada "Prueba" publicada |
+| `kubectl -n cms delete pod -l app=wordpress` (las 3 réplicas a la vez) | 3/3 recreadas y `Ready` en 33 s; el título y las entradas siguen ahí (`?rest_route=/wp/v2/posts`) |
+| `sha256(WORDPRESS_AUTH_KEY)` en cada réplica | El mismo valor en las 3: las salts vienen del Secret |
+
 ## Acceso público al CMS con dominio — Estudiante A
 
 ## Extras

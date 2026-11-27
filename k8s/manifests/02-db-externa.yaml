@@ -1,0 +1,37 @@
+# Base de datos EXTERNA al clúster: MySQL de db01 — Estudiante B (Fase 4)
+# ADR-0003 §4: el clúster es de un solo nodo; un MySQL dentro de él quedaría en el mismo servidor
+# que el CMS, y el enunciado lo prohíbe ("la base de datos no puede estar presente en el mismo
+# servidor"). WordPress usa la base wordpress_k8s de db01 (usuario wp_k8s@10.10.10.40).
+#
+# Service SIN selector + EndpointSlice manual: los pods siguen usando un nombre de Kubernetes
+# (mysql.cms.svc.cluster.local:3306), pero el tráfico va a 10.10.10.10. Si la base se mudara, solo
+# cambia este archivo. Al salir del clúster, flannel hace SNAT a la IP del nodo (10.10.10.40), que
+# es la que autorizan MySQL (wp_k8s@10.10.10.40) y ufw en db01.
+apiVersion: v1
+kind: Service
+metadata:
+  name: mysql
+  namespace: cms
+spec:
+  ports:
+    - name: mysql
+      port: 3306
+      targetPort: 3306
+---
+apiVersion: discovery.k8s.io/v1
+kind: EndpointSlice
+metadata:
+  name: mysql-db01
+  namespace: cms
+  labels:
+    kubernetes.io/service-name: mysql                 # lo asocia al Service de arriba
+    endpointslice.kubernetes.io/managed-by: examen-paas   # que el controlador no lo toque
+addressType: IPv4
+ports:
+  - name: mysql
+    port: 3306
+    protocol: TCP
+endpoints:
+  - addresses: ["10.10.10.10"]
+    conditions:
+      ready: true
