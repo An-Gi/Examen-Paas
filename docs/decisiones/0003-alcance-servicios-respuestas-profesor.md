@@ -1,59 +1,66 @@
 # ADR-0003: Alcance de servicios y extras según las respuestas del profesor
 
-- **Estado:** Propuesta (se acepta cuando A apruebe el PR; afecta su parte)
+- **Estado:** Propuesta (actualización del 2026-11-27 con las consultas C1–C3; se acepta cuando B apruebe el PR, porque afecta su parte)
 - **Fecha:** 2026-11-27
-- **Autor:** Estudiante B
-- **Revisor:** Estudiante A
+- **Autor:** Estudiante B · **Actualización:** Estudiante A
+- **Revisor:** Estudiante A · **Revisor de la actualización:** Estudiante B
 
 ## Contexto
 
-Las respuestas a las [preguntas #2 a #9](../preguntas-profesor.md) cambian supuestos de ADR-0001. Lo esencial:
+Las respuestas a las [preguntas #2 a #9](../preguntas-profesor.md) y a las consultas C1 a C3 cambian supuestos de ADR-0001. Lo esencial:
 
 - **#2 y #3:** "solo lo que está en el enunciado cuenta como servicio". En la #3 el profesor no aclaró más.
 - **#4:** los extras también pueden salir del enunciado: es extra **cualquier servicio por encima de los seis**.
 - **#8:** sin respuesta.
 - **#9:** el BIND en Docker puede apoyar el rubro de DNS, pero se prefiere un DNS **dedicado**.
+- **C1 a C3:** consultas de otro estudiante del curso, respondidas por el profesor el 2026-11-27. No son nuestras, así que no están en `preguntas-profesor.md`, pero valen para todos los grupos:
+  - **C1:** el FileServer va en **FreeBSD con jails**, aunque la rúbrica lo agrupe en "6 servicios con Docker-Compose". FTP y SMB en Docker **no** cumplen.
+  - **C2:** el FileServer necesita **los tres** protocolos: FTP, SMB y NFS.
+  - **C3:** la sincronización del LDAP con **Active Directory es obligatoria**. Un OpenLDAP independiente no basta. Según el profesor, "la instalación del AD es facilísima".
 
 **Criterio del grupo:** si una respuesta es vaga o no llegó, se toma la lectura **más conservadora** del enunciado. Así, ninguna interpretación del profesor nos deja con menos puntos de los planeados.
 
-En la lista de servicios del enunciado, *FileServer* es **un** servicio con tres protocolos (FTP, SMB y NFS), igual que *DNS* (Bind) o *DHCP* (DHCPD). La lectura conservadora de la #3 es entonces que **FTP y SMB podrían contar como un solo servicio**. En ese caso, el plan de ADR-0001 (DNS, LDAP, Email, OwnCloud, FTP y SMB) quedaría en 5.
+En la lista de servicios del enunciado, *FileServer* es **un** servicio con tres protocolos (FTP, SMB y NFS), igual que *DNS* (Bind) o *DHCP* (DHCPD). La C2 lo confirma: FTP, SMB y NFS son **un solo** servicio. La C1 lo saca de Docker. Con eso, el plan original de esta ADR (ocho servicios en Docker, con FTP y SMB entre ellos) ya no se sostiene.
 
 ## Decisión
 
-### 1. Servicios en Docker Compose: ocho del enunciado
+### 1. Servicios: ocho del enunciado, seis en Docker Compose
 
-| # | Servicio del enunciado | Carpeta | Responsable |
-|---|---|---|---|
-| 1 | DNS (Bind) | `01-dns-bind9` | A |
-| 2 | Linux Domain Controller (LDAP) | `02-ldap` | A |
-| 3 | Email Server | `03-email` | A |
-| 4 | OwnCloud | `04-owncloud` | B |
-| 5 | FileServer: FTP | `05-ftp` | B |
-| 6 | FileServer: SMB | `06-smb` | B |
-| 7 | DHCP (DHCPD) | `90-respaldo-dhcp` → `07-dhcp` | B |
-| 8 | Encrypted Mail List Server (Schleuder) | `08-schleuder` (nueva) | A |
+| # | Servicio del enunciado | Plataforma | Carpeta | Responsable |
+|---|---|---|---|---|
+| 1 | DNS (Bind) | Docker (`docker01`) | `01-dns-bind9` | A |
+| 2 | Linux Domain Controller (LDAP), sincronizado con AD | Docker (`docker01`) | `02-ldap` | A |
+| 3 | Email Server | Docker (`docker01`) | `03-email` | A |
+| 4 | OwnCloud | Docker (`docker01`) | `04-owncloud` | B |
+| 5 | DHCP (DHCPD) | Docker (`docker01`) | `90-respaldo-dhcp` → `07-dhcp` | B |
+| 6 | Encrypted Mail List Server (Schleuder) | Docker (`docker01`) | `08-schleuder` (nueva) | A |
+| 7 | **FileServer: FTP + SMB + NFS** | **FreeBSD con jails** (VM nueva `files01`, §6) | `freebsd/` (nueva) | B |
+| 8 | **Windows Domain Controller (Active Directory)** | Windows Server (dónde corre se decide en §7) | `windows-ad/` (nueva) | A |
 
-Además, **NFS** se agrega al FileServer (B) para que el servicio cumpla los tres protocolos que pide el enunciado. NFS no se cuenta como un servicio aparte.
+El AD era un candidato descartado (§2). La C3 lo vuelve **obligatorio**, porque el LDAP tiene que sincronizarse con él. Como también es un servicio del enunciado, se cuenta.
 
 Con ocho servicios, cualquier conteo del profesor nos favorece:
 
-| Si el profesor cuenta… | Rubro de Docker (6) | Extras |
+| Si el profesor cuenta… | Rubro "6 servicios" | Extras |
 |---|---|---|
-| FTP y SMB por separado | 1–6 | DHCP + Schleuder = **2** (el máximo) |
-| FTP + SMB (+ NFS) como un FileServer | DNS, LDAP, Email, OwnCloud, FileServer, DHCP | Schleuder = **1** |
+| El FileServer dentro del rubro (lectura de la C1) | FileServer + 5 de Docker | El 6.º de Docker + AD = **2** (el máximo) |
+| Solo los servicios en Docker Compose | Los 6 de Docker | FileServer + AD = **2** (el máximo) |
+| El AD como parte del LDAP (no como servicio aparte) | Cualquiera de los dos anteriores | **1** |
 
 Los contenedores auxiliares (MariaDB y Redis de OwnCloud, Roundcube, phpLDAPadmin) **no cuentan** (#2): cada carpeta es un servicio.
 
+`docker/05-ftp` y `docker/06-smb` (PR #7) **dejan de contarse** como servicios. Se conservan como respaldo hasta que el FileServer de FreeBSD pase las mismas pruebas (`probar-montajes.sh`). Después se mueven a `docker/90-respaldo-ftp` y `docker/90-respaldo-smb`, o se eliminan. Su configuración se reutiliza en las jails: las banderas de pure-ftpd, los usuarios virtuales, el recurso de Samba y las pruebas de montaje.
+
 ### 2. Extras: servicios del enunciado, no herramientas externas
 
-Prometheus + Grafana y Uptime Kuma **dejan de ser los extras**: no están en el enunciado y, según la #2, eso es lo que define un servicio. Los extras pasan a ser **DHCP y Schleuder**. Se eligieron por fiabilidad en la demo y facilidad de instalación:
+Prometheus + Grafana y Uptime Kuma **dejan de ser los extras**: no están en el enunciado y, según la #2, eso es lo que define un servicio. Los extras salen de los ocho servicios de §1: qué servicios terminan siendo extra depende del conteo del profesor (tabla de §1). DHCP y Schleuder se eligieron por fiabilidad en la demo y facilidad de instalación:
 
 | Candidato del enunciado | Viable en el Mac (ARM64, 16 GB) | Fiabilidad en la demo | Esfuerzo | Veredicto |
 |---|---|---|---|---|
 | **DHCP (DHCPD)** | Sí, la imagen ya existe | Alta: una VM pide IP y la recibe | ~2 h | **Elegido** |
 | **Schleuder** | Sí, sobre el Email de A | Media-alta: un correo cifrado llega re-cifrado a cada miembro | ~4 h | **Elegido** |
+| **Windows Domain Controller** | Por verificar (§7) | Media: alta de usuario en AD que aparece en el LDAP | ~4–5 h con la sincronización | **Obligatorio** por la C3 (antes descartado) |
 | MySQL en Docker | Sí | Alta | ~1 h | Descartado: es el mismo servicio que `db01` (rubro nativo) y podría no contar como otro |
-| Windows Domain Controller | No: sin Windows Server ARM para VirtualBox | — | Alto | Descartado |
 | Thin Client (LTSP) | No en la práctica: PXE con VMs ARM | Baja | Alto | Descartado |
 | BigBlueButton | No: exige Ubuntu x86 y ~16 GB solo para él | — | Muy alto | Descartado |
 | OpenStack | No: controlador + nodo de cómputo no caben en la RAM que queda | — | Muy alto | Descartado |
@@ -84,24 +91,58 @@ El enunciado pide "un servicio de DNS con zonas para el dominio seleccionado, ut
 
 **Recomendación: A.** El BIND de Docker sigue con `paas.internal` y cuenta como servicio Docker. El de la EC2 es autoritativo para `examenpaas.tech` (`cms`, `ns1`, `ns2`). Si name.com o el registro `.tech` exigen dos NS con IPs distintas, `ns2` puede ser un secundario gratuito (por ejemplo, Hurricane Electric con AXFR desde la EC2). El Security Group abre 53/udp y 53/tcp.
 
+### 6. FileServer en FreeBSD con jails (C1 y C2), B
+
+- **VM nueva `files01`:** FreeBSD aarch64 en `lan-paas`, con ~1 GB de RAM y 1 CPU. Las jails comparten el kernel del anfitrión, así que tres jails cuestan poco más que una VM sola. La IP y la versión de FreeBSD se fijan en la F3 y se anotan en `convenciones.md`.
+- **Una jail por protocolo**, cada una con su IP en `lan-paas`:
+  - `ftp`: pure-ftpd, con las mismas banderas y usuarios virtuales que `docker/05-ftp`.
+  - `smb`: Samba, solo con el TCP 445 y SMB 3.1.1, como `docker/06-smb`.
+  - `nfs`: servidor NFSv4. **Hay que verificarlo primero:** el servidor NFS dentro de una jail requiere una jail VNET con `allow.nfsd` (FreeBSD 13.3/14.1 o posterior). Si no funciona, `nfsd` corre en el anfitrión `files01` y se exporta la carpeta de una jail. Esa limitación se documenta en la §6.
+- **Pruebas de la demo:** `probar-montajes.sh` (de `docker/`) se adapta a las IPs de las jails y monta desde `web01` los tres protocolos: `rclone mount` (FTP), `mount -t cifs` (SMB) y `mount -t nfs` (NFS). `jls` en `files01` muestra las tres jails.
+- **Primer paso (spike de ≤ 1 h):** comprobar que FreeBSD aarch64 arranca en VirtualBox 7.2 sobre Apple Silicon y ve la red `lan-paas`. Hasta ahora no se ha probado (ADR-0002). Si falla, la alternativa es UTM (QEMU), aunque falta verificar que quede en la misma red que las VMs de VirtualBox.
+
+### 7. Active Directory y sincronización con el LDAP (C3), A
+
+**AD como fuente de verdad.** Los usuarios se crean en AD y se copian en una sola dirección al OpenLDAP de `02-ldap`. Una sincronización en las dos direcciones duplica el trabajo y los conflictos, y la C3 no la pide.
+
+**Dónde corre Windows Server.** Es lo que falta decidir. ADR-0002 encontró que no hay Windows Server ARM para VirtualBox, así que A hace un spike de ≤ 1 h antes de elegir:
+
+| Alternativa | Ventajas | Desventajas |
+|---|---|---|
+| **A. Windows Server en una VM local** (imagen ARM64, si existe, en VirtualBox o UTM) | AD real dentro de `lan-paas`, sin costo | Hay que confirmar que exista y funcione una imagen ARM64. Windows Server Core necesita ≥ 2 GB, y la RAM ya está justa (Consecuencias) |
+| **B. Windows Server en una EC2** (AMI oficial x86) | AD real con instalación estándar, sin depender del Mac | Costo por hora más alto que Linux (licencia incluida) contra un presupuesto de USD 5: se enciende solo para las pruebas y la defensa. `docker01` tiene que llegar a la EC2 por la VPN, y hoy el único cliente VPN de la LAN es `web01` |
+| C. Samba 4 como AD DC (Linux, ARM64, en Docker o en una VM) | Implementa el protocolo de AD, es liviano y corre en el Mac | No es *Windows* Domain Controller: el profesor podría no aceptarlo como AD ni como servicio. Se usa solo como plan B |
+
+**Recomendación:** Windows Server real (A o B, según el spike); C solo si ninguna funciona, y se documenta como limitación. Es la lectura conservadora, y coincide con el comentario del profesor de que la instalación es fácil, que apunta al asistente de Windows Server.
+
+**Sincronización.** Se propone **LSC** (LDAP Synchronization Connector) en `docker01`: lee AD por LDAP, escribe en OpenLDAP y corre de forma periódica (temporizador de systemd o cron, cada pocos minutos). La alternativa más simple es un script con `ldapsearch` y `ldapadd`/`ldapmodify`. La herramienta la elige A. **Prueba de la demo:** se crea un usuario en "Usuarios y equipos de Active Directory", y después de la sincronización aparece en el `ldapsearch` del OpenLDAP y en phpLDAPadmin.
+
 ## Alternativas consideradas
 
 | Alternativa | Ventajas | Desventajas | Motivo del descarte |
 |---|---|---|---|
 | Mantener ADR-0001 (6 servicios y extras externos) | Ya estaba planeado | Si FTP+SMB cuentan como uno, faltaría un servicio (−5 % del 30 %); los extras externos podrían no contar | No cubre la lectura conservadora |
-| FileServer en FreeBSD con jails | Es literalmente lo que pide el enunciado | Otra VM y otro SO (aarch64 en VirtualBox, sin probar) sin RAM disponible; no tiene rubro propio | Costo alto para un ítem sin peso propio; queda como riesgo documentado |
+| FileServer en Docker Compose (FTP y SMB en `docker01`, plan anterior de esta ADR) | Ya implementado y probado (PR #7) | Contradice la C1 | El profesor exige FreeBSD con jails (C1) |
+| FileServer con solo uno o dos protocolos | Menos trabajo | Servicio incompleto | La C2 exige los tres |
+| OpenLDAP independiente, con sus propios usuarios | Ya planeado, sin VM extra | No sincroniza con nada | La C3 hace obligatoria la sincronización con AD |
 | CMS en k3s con su propio MySQL (StatefulSet) | Clúster autocontenido | Base y CMS en el mismo nodo, contra la regla del WebServer | Lectura conservadora de la #8 |
 
 ## Consecuencias
 
-- **Carga:**
-  - B suma NFS y DHCP (~4 h) y deja Uptime Kuma (−2,5 h); la F4 se simplifica.
-  - A suma Schleuder (~4 h) y el BIND público (~2,5 h), y deja Prometheus + Grafana (−3 h).
-  - El reparto queda algo cargado hacia A. Se puede rebalancear en la revisión de este PR.
+- **Carga (estimación inicial):**
+  - B suma NFS y DHCP (~4 h) y deja Uptime Kuma (−2,5 h); la F4 se simplifica. Con la C1 suma la VM `files01` y las tres jails (~6 h), y reutiliza la configuración de FTP y SMB del PR #7.
+  - A suma Schleuder (~4 h) y el BIND público (~2,5 h), y deja Prometheus + Grafana (−3 h). Con la C3 suma el AD y la sincronización (~4–5 h).
+  - Las dos cargas suben de forma parecida. Se puede rebalancear en la revisión de este PR.
+- **RAM:** hoy las VMs usan 9 GB de 16. `files01` suma ~1 GB. Un Windows Server local sumaría ≥ 2 GB, o sea un total de ~12 GB con macOS por encima. Si el AD va en la EC2 o en Samba, no se suma nada local. `docker01` libera un poco de memoria cuando FTP y SMB salen de Docker.
 - **Contratos nuevos:**
   - B → A: crear la base `wordpress_k8s` en `db01`.
   - A → B: Schleuder necesita las cuentas de correo de los miembros de la lista.
-- **Riesgo que queda:** que el profesor exija FreeBSD con jails para el FileServer. Se documenta en la §6 como limitación.
+  - A → B: si el AD va en la EC2, decir cómo llega `docker01` a la VPN (cliente propio o ruta por `web01`).
+- **Riesgos que quedan:**
+  - FreeBSD aarch64 en VirtualBox sobre Apple Silicon no se ha probado (spike de §6).
+  - El servidor NFS dentro de una jail depende de la versión de FreeBSD y de VNET (§6).
+  - Puede que no haya Windows Server ARM64 utilizable, y la EC2 Windows consume presupuesto (§7).
+  - El profesor podría no aceptar Samba como AD, si se llega al plan C.
 - **Archivos afectados:**
-  - `convenciones.md` (puertos y la red `wan-dhcp`), `division-trabajo.md`, el `README.md` raíz y la §3 y §4 de `documentacion.md`.
-  - `k8s/` (F4), `docker/90-respaldo-dhcp` (F3), y `terraform/` y `ansible/` (A, F5).
+  - `convenciones.md` (puertos, la red `wan-dhcp`, el nodo `files01` con las IPs de sus jails y el nodo del AD), `division-trabajo.md`, el `README.md` raíz, `docker/README.md` (FTP y SMB pasan a respaldo), `docs/demo/guion-defensa.md` y la §3, §4 y §6 de `documentacion.md`.
+  - `k8s/` (F4), `docker/90-respaldo-dhcp` (F3), `docker/02-ldap` (sincronización), `freebsd/` y `windows-ad/` (nuevas), y `terraform/` y `ansible/` (A, F5, y la EC2 del AD si se elige B).
