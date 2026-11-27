@@ -79,6 +79,27 @@ Todos se publican **solo en `10.10.10.30`**, no en `0.0.0.0`. Así se evita, por
 
 `base` (plantilla) → `fase0-ok` → `fase1-ok` → … → `pre-defensa`. Se toma uno **siempre antes** de un cambio riesgoso en algo que ya funciona.
 
+**Sin actualizaciones automáticas.** `scripts/vm/ajustes-demo.sh` agrega 1 GB de swap y apaga `unattended-upgrades`, los timers `apt-daily*` y el aviso de actualizaciones al iniciar sesión. El 2026-11-27 un upgrade automático, MySQL y ese aviso dejaron sin memoria a `db01` (1 GB): el kernel mató MySQL 10 veces y la VM dejó de responder. Se corre **en cada VM existente y en la plantilla**:
+- los clones enlazados no heredan cambios hechos en la plantilla después de clonarlos;
+- las VMs nuevas (por ejemplo, el cliente de `wan-dhcp`) salen de la plantilla.
+
+**Rutina antes de cada snapshot de fase** (con la VM ya funcionando):
+
+```bash
+sudo apt update && sudo apt full-upgrade -y     # a mano: es el único momento en que se actualiza
+[ -f /var/run/reboot-required ] && sudo reboot   # si hubo kernel nuevo, reiniciar y volver a probar
+# ... prueba de demo de la fase (README de la carpeta) ...
+sudo poweroff                                    # snapshot con la VM apagada: MySQL queda consistente
+```
+
+```bash
+VBoxManage snapshot <vm> take faseN-ok --description "qué funciona en este punto"
+```
+
+**Congelamiento:** la última actualización se hace 2–3 días antes de la defensa. Después se prueba todo y se toma `pre-defensa`, y no se actualiza más. Si algo se rompe el día de la defensa, se vuelve a `pre-defensa` y no se depura en vivo.
+
+**Plantilla:** `base` no se borra mientras existan clones enlazados que dependen de él. Después de correr `ajustes-demo.sh` en la plantilla se toma `base-ajustes`, y los clones nuevos salen de ahí (`SNAPSHOT=base-ajustes bash scripts/vm/clonar-vms.sh`).
+
 ## Git
 
 Ver [`CONTRIBUTING.md`](../CONTRIBUTING.md): ramas `feat/<fase>-<tema>`, Conventional Commits con alcance y PR revisado por el otro estudiante.
