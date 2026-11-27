@@ -12,3 +12,4 @@
 |---|---|---:|---|
 | 2026-11-25 | Kick-off (A+B): lectura del enunciado y rúbrica, roles A/B y dominio público examenpaas.tech | 2.0 | F0 |
 | 2026-11-25 | Preparación de las máquinas virtuales a partir de la plantilla, configuración de SSH y dependencias | 2.5 | F0 |
+| 2026-11-27 | Router Linksys E1200 V2 (DD-WRT) en la red del TEC para la defensa, con pruebas de salida y documentación | 1.0 | F7 |
