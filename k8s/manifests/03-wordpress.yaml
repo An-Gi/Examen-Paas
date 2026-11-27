@@ -5,7 +5,9 @@ metadata:
   name: wordpress-contenido
   namespace: cms
 spec:
-  accessModes: ["ReadWriteOnce"]   # un solo nodo: las réplicas comparten el volumen (ver README)
+  # local-path (incluido en k3s) es una carpeta del nodo. ReadWriteOnce = montable por UN nodo;
+  # como el clúster tiene uno solo, las 3 réplicas lo comparten. En multinodo haría falta RWX (NFS).
+  accessModes: ["ReadWriteOnce"]
   storageClassName: local-path
   resources:
     requests:
@@ -16,11 +18,16 @@ kind: Deployment
 metadata:
   name: wordpress
   namespace: cms
+  labels:
+    app: wordpress
 spec:
-  replicas: 1
+  replicas: 1   # 1 al instalar: con 2, ambos pods copiarían WordPress al PVC vacío a la vez. La demo escala a 3.
   selector:
     matchLabels:
       app: wordpress
+  strategy:
+    type: RollingUpdate
+    rollingUpdate: {maxUnavailable: 0, maxSurge: 1}   # nunca bajar de las réplicas pedidas al actualizar
   template:
     metadata:
       labels:
@@ -28,22 +35,44 @@ spec:
     spec:
       containers:
         - name: wordpress
-          image: wordpress:6-apache        # TODO(B): fijar versión exacta
+          image: wordpress:7.1.5-php8.5-apache   # misma versión de WordPress y PHP que web01
+          # Credenciales Y salts salen del Secret (k8s/crear-secret.sh). Si cada réplica generara
+          # sus propias salts, una sesión iniciada en un pod no valdría en otro.
+          envFrom:
+            - secretRef:
+                name: wordpress-db
           env:
             - name: WORDPRESS_DB_HOST
-              value: mysql
+              value: mysql:3306              # el Service de 02-db-externa.yaml
             - name: WORDPRESS_DB_NAME
-              valueFrom: { secretKeyRef: { name: wordpress-db, key: MYSQL_DATABASE } }
+              value: wordpress_k8s
             - name: WORDPRESS_DB_USER
-              valueFrom: { secretKeyRef: { name: wordpress-db, key: MYSQL_USER } }
-            - name: WORDPRESS_DB_PASSWORD
-              valueFrom: { secretKeyRef: { name: wordpress-db, key: MYSQL_PASSWORD } }
+              value: wp_k8s
+            - name: WORDPRESS_CONFIG_EXTRA
+              value: |
+                define('DISALLOW_FILE_EDIT', true);
           ports:
-            - containerPort: 80
+            - name: http
+              containerPort: 80
+          # readiness: "/" pasa por PHP y la base. Si db01 no responde, el pod sale del Service
+          # (no recibe tráfico) pero NO se reinicia: reiniciarlo no arreglaría la base.
+          readinessProbe:
+            httpGet: {path: /, port: http, httpHeaders: [{name: Host, value: cms-k8s.paas.internal}]}
+            initialDelaySeconds: 10
+            periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 3
+          # liveness: solo que Apache conteste. Un Apache colgado sí se arregla reiniciando.
+          livenessProbe:
+            tcpSocket: {port: http}
+            initialDelaySeconds: 30
+            periodSeconds: 20
+          resources:
+            requests: {cpu: 100m, memory: 128Mi}
+            limits: {memory: 384Mi}
           volumeMounts:
             - name: contenido
               mountPath: /var/www/html
-          # TODO(B): readinessProbe/livenessProbe HTTP y resources
       volumes:
         - name: contenido
           persistentVolumeClaim:
@@ -58,5 +87,6 @@ spec:
   selector:
     app: wordpress
   ports:
-    - port: 80
-      targetPort: 80
+    - name: http
+      port: 80
+      targetPort: http

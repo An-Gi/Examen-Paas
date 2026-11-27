@@ -1,5 +1,6 @@
 # Ingress del CMS (Traefik, incluido en k3s) — Estudiante B (Fase 4)
-# Nombre resuelto por BIND9 (docker/01-dns-bind9): cms-k8s.paas.internal -> 10.10.10.40
+# Nombre: cms-k8s.paas.internal -> 10.10.10.40 (BIND9 de A cuando esté; mientras, /etc/hosts).
+# Traefik (Ingress Controller de k3s) escucha en el 80 del nodo y enruta por el encabezado Host.
 apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:

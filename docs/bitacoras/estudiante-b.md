@@ -16,3 +16,4 @@
 | 2026-11-27 | CA con OpenSSL, MySQL en db01 y WordPress en web01 (HTTP/HTTPS), con pruebas | 1.5 | F1 |
 | 2026-11-27 | Diagnóstico de falta de memoria en db01, ajustes de estabilidad y snapshots fase1-ok | 0.5 | F1 |
 | 2026-11-27 | Docker en docker01; OwnCloud, FTP y SMB con montajes rclone/cifs probados desde web01 | 1.0 | F3 |
+| 2026-11-27 | k3s en k8s01 y WordPress con la base de db01; pruebas de escalado y autorrecuperación | 1.0 | F4 |
