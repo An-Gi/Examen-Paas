@@ -17,3 +17,4 @@
 | 2026-11-27 | Diagnóstico de falta de memoria en db01, ajustes de estabilidad y snapshots fase1-ok | 0.5 | F1 |
 | 2026-11-27 | Docker en docker01; OwnCloud, FTP y SMB con montajes rclone/cifs probados desde web01 | 1.0 | F3 |
 | 2026-11-27 | k3s en k8s01 y WordPress con la base de db01; pruebas de escalado y autorrecuperación | 1.0 | F4 |
+| 2026-11-27 | Router Linksys E1200 V2 (DD-WRT) en la red del TEC para la defensa, con pruebas de salida y documentación | 1.0 | F7 |
