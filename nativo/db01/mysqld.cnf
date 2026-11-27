@@ -1,7 +1,27 @@
-# /etc/mysql/mysql.conf.d/99-paas.cnf — db01 · Estudiante B (Fase 1)
-# Se carga después de mysqld.cnf, por eso este archivo gana.
+# /etc/mysql/mysql.conf.d/zz-paas.cnf — db01 · Estudiante B (Fase 1)
+# MySQL lee esta carpeta en orden alfabético y el último valor gana. "zz-" va después de
+# mysqld.cnf (que trae bind-address = 127.0.0.1). Con "99-" se leía ANTES y perdía: los
+# dígitos van antes que las letras. Comprobar con: my_print_defaults mysqld
 [mysqld]
 # Escucha solo en la LAN: ni en 0.0.0.0 ni en la NIC NAT
 bind-address = 10.10.10.10
-# TODO(B): decidir mysqlx-bind-address (X Protocol, puerto 33060): ¿desactivarlo o limitarlo?
-# TODO(B): evaluar require_secure_transport = ON con un certificado de nuestra CA (extra de seguridad)
+# X Protocol (puerto 33060): WordPress usa el protocolo clásico (3306). Se apaga para no dejar
+# otro puerto abierto que nadie usa.
+mysqlx = OFF
+# utf8mb4 completo (emojis incluidos), el que espera WordPress
+character-set-server = utf8mb4
+collation-server     = utf8mb4_unicode_ci
+# require_secure_transport = ON con un certificado de nuestra CA queda como mejora posible:
+# el tráfico web01 -> db01 no sale de la LAN host-only.
+
+# --- Memoria: db01 tiene ~1 GB (ADR-0002) ------------------------------------------------------
+# Con los valores por defecto MySQL 8.4 ocupaba ~480 MB y el kernel lo mató 10 veces seguidas por
+# falta de memoria (2026-11-27, "Out of memory: Killed process ... (mysqld)" en journalctl -k).
+# performance_schema es la instrumentación interna de diagnóstico: unos 150-200 MB que la demo
+# no necesita. El resto acota buffers para un sitio con pocos usuarios.
+performance_schema      = OFF
+innodb_buffer_pool_size = 128M
+innodb_log_buffer_size  = 8M
+max_connections         = 40
+key_buffer_size         = 8M
+table_open_cache        = 400

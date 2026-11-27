@@ -12,9 +12,12 @@ Todos corren en `docker01` (10.10.10.30). Los puertos se publican **solo en esa 
 | 4 | `04-owncloud` | OwnCloud | B | Login y subida de un archivo | ✅ |
 | 5 | `05-ftp` | FileServer · FTP | B | `rclone mount` en otra VM (`probar-montajes.sh ftp`) | ✅ |
 | 6 | `06-smb` | FileServer · SMB | B | `mount -t cifs` en otra VM (`probar-montajes.sh smb`) | ✅ |
-| 7 | `90-respaldo-dhcp` | DHCP (respaldo) | B | Solo si falla uno de los 6 | — |
-| + | `extras/monitoreo` | Prometheus + Grafana (extra) | A | Dashboard de las VMs | ⬜ |
-| + | `extras/uptime-kuma` | Uptime Kuma (extra) | B | Panel con todos los servicios en verde | ⬜ |
+| 6b | NFS (F3) | FileServer · NFS | B | `mount -t nfs` en otra VM (completa el FileServer, no cuenta aparte) | ⬜ |
+| 7 | `07-dhcp` (hoy `90-respaldo-dhcp`) | DHCP · DHCPD (extra) | B | Una VM en `wan-dhcp` recibe IP | ⬜ |
+| 8 | `08-schleuder` | Encrypted Mail List · Schleuder (extra) | A | Correo cifrado a la lista llega re-cifrado a cada miembro | ⬜ |
+| — | `extras/uptime-kuma` | Panel de apoyo (no se cuenta como servicio) | B | Todos los servicios en verde | ⬜ |
+
+Se montan **ocho servicios del enunciado** para que el 30 % y los extras no dependan de si el profesor cuenta FTP y SMB como uno o como dos ([ADR-0003](../docs/decisiones/0003-alcance-servicios-respuestas-profesor.md)). Prometheus + Grafana (`extras/monitoreo`) ya no es extra: no está en el enunciado.
 
 ## Uso
 
