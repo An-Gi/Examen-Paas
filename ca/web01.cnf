@@ -20,4 +20,4 @@ subjectAltName = @san
 DNS.1 = web01.paas.internal
 DNS.2 = www.paas.internal
 IP.1  = 10.10.10.20
-# TODO(B): ¿agregar cms.<dominio público>? Solo si Nginx en EC2 hace passthrough TLS (ver nativo/README.md)
+# cms.examenpaas.tech NO va aquí: Nginx en la EC2 termina TLS con Let's Encrypt y llega a web01 por la VPN.

@@ -12,3 +12,6 @@
 |---|---|---:|---|
 | 2026-11-25 | Kick-off (A+B): lectura del enunciado y rúbrica, roles A/B y dominio público examenpaas.tech | 2.0 | F0 |
 | 2026-11-25 | Preparación de las máquinas virtuales a partir de la plantilla, configuración de SSH y dependencias | 2.5 | F0 |
+| 2026-11-27 | Respuestas del profesor (#2–#9) y ADR-0003: alcance de servicios y extras | 0.5 | F0 |
+| 2026-11-27 | CA con OpenSSL, MySQL en db01 y WordPress en web01 (HTTP/HTTPS), con pruebas | 1.5 | F1 |
+| 2026-11-27 | Diagnóstico de falta de memoria en db01, ajustes de estabilidad y snapshots fase1-ok | 0.5 | F1 |

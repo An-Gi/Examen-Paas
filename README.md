@@ -81,7 +81,7 @@ Cada carpeta tiene un `README.md` con: responsable, criterios de "terminado", **
 | Rubro | Peso | Responsable | Carpeta | Estado |
 |---|---|---|---|---|
 | 6 servicios con Docker Compose | 30 % | A (3) + B (3) | `docker/` | ⬜ |
-| DB + WebServer + CMS sin contenedores | 20 % | B | `nativo/`, `ca/` | ⬜ |
+| DB + WebServer + CMS sin contenedores | 20 % | B | `nativo/`, `ca/` | ✅ |
 | VPN con IaC (Terraform + Ansible) | 20 % | A | `terraform/`, `ansible/` | ⬜ |
 | CMS con Kubernetes | 10 % | B | `k8s/` | ⬜ |
 | Acceso público al CMS con dominio | 10 % | A | `dns-publico/`, `ansible/roles/nginx_proxy` | ⬜ |
