@@ -27,16 +27,25 @@ make proxy          # rol nginx_proxy (Fase 5)
 ## Requisitos de la VPN (enunciado)
 
 - **TCP** e interfaz **TAP**. El tráfico se **rutea** por AWS (`redirect-gateway def1`).
-- Clientes en la **computadora** y el **teléfono**. Ver la pregunta #1 sobre TAP en móviles.
+- Clientes en la **computadora** y el **teléfono**. El teléfono usa una segunda instancia **TUN** (`openvpn-server@movil`, TCP 1195, `10.9.0.0/24`), porque las apps móviles no soportan TAP sin root. El profesor lo aceptó (pregunta #1); TAP con root vale +7,5 % extra.
 - `web01` es cliente con IP fija `10.8.0.20` (CCD) y `pull-filter ignore "redirect-gateway"`, porque solo usa el túnel para el reverse proxy.
 
 ## Terminado cuando (F2)
 
-- [ ] Correr el playbook dos veces da `changed=0` la segunda vez (idempotente)
-- [ ] En la laptop conectada: `curl ifconfig.me` devuelve la IP elástica
-- [ ] `ip -d link show tap0` en el cliente confirma la interfaz TAP
-- [ ] El teléfono conectado navega por AWS (TUN si así se acordó con el profesor)
-- [ ] Desde la EC2: `ping 10.8.0.20` llega a `web01`
+Prueba real del 2026-11-26 (EC2 en us-east-2, OpenVPN 2.6.19):
+
+- [x] Correr el playbook dos veces da `changed=0` la segunda vez (idempotente)
+- [x] Con el perfil `laptop` conectado, la IP de salida es la IP elástica (probado en un contenedor Linux)
+- [x] `ip -d link show tap0` en el cliente confirma la interfaz TAP
+- [x] El teléfono (OpenVPN Connect, perfil TUN) navega por AWS: `checkip.amazonaws.com` muestra la IP elástica
+- [x] Desde la EC2: `ping 10.8.0.20` llega al cliente `web01` (probado en un contenedor; falta repetirlo con la VM `web01`)
+
+> **macOS no soporta TAP** (Apple eliminó las extensiones de kernel; Tunnelblick y OpenVPN Connect solo hacen TUN
+> en Apple Silicon). El cliente TAP "computadora" de la demo tiene que ser Linux (una VM o un contenedor con
+> `--cap-add NET_ADMIN --device /dev/net/tun`) o Windows (adaptador TAP-Windows).
+>
+> Cada `terraform destroy` borra la PKI: el siguiente `apply` + `make vpn` genera una CA nueva y **todos los
+> `.ovpn` cambian** (hay que volver a entregar `web01.ovpn`). La IP elástica también cambia.
 
 ## Preguntas probables en la defensa
 

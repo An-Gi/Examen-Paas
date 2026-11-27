@@ -1,9 +1,11 @@
 # Cliente OpenVPN: {{ cliente.nombre }} — generado por Ansible (rol openvpn). Contiene la llave privada:
 # no subir a Git ni compartir por chat. Uso: sudo openvpn --config {{ cliente.nombre }}.ovpn
+{% set instancia = openvpn_instancias | selectattr('nombre', 'equalto', 'movil' if cliente.movil | default(false) else 'server') | first %}
+# Instancia del servidor: {{ instancia.nombre }} ({{ instancia.dev | upper }})
 client
-dev {{ vpn_dev }}
+dev {{ instancia.dev }}
 proto {{ vpn_proto }}
-remote {{ ansible_host }} {{ vpn_puerto }}
+remote {{ ansible_host }} {{ instancia.puerto }}
 resolv-retry infinite
 nobind
 persist-key

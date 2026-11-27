@@ -44,7 +44,13 @@ variable "ruta_llave_publica" {
 }
 
 variable "puerto_vpn" {
-  description = "Puerto TCP de OpenVPN (plan B: 443 con port-share)"
+  description = "Puerto TCP de OpenVPN, instancia TAP (plan B: 443 con port-share)"
   type        = number
   default     = 1194
+}
+
+variable "puerto_vpn_movil" {
+  description = "Puerto TCP de la instancia OpenVPN TUN del teléfono (debe coincidir con vpn_movil_puerto de Ansible)"
+  type        = number
+  default     = 1195
 }

@@ -6,4 +6,17 @@ openvpn_ccd_dir: /etc/openvpn/server/ccd
 openvpn_clientes_dir: /root/clientes
 openvpn_ca_cn: "{{ proyecto | default('examen-paas') }}-vpn-ca"
 openvpn_dns_push: 1.1.1.1
+
+# Instancias del servidor: una por archivo {{ openvpn_dir }}/<nombre>.conf -> openvpn-server@<nombre>
+openvpn_instancias:
+  - nombre: server                       # laptop y web01 (TAP, lo que pide el enunciado)
+    dev: "{{ vpn_dev }}"
+    puerto: "{{ vpn_puerto }}"
+    red: "{{ vpn_red }}"
+    ccd: true
+  - nombre: movil                        # teléfono (TUN)
+    dev: tun
+    puerto: "{{ vpn_movil_puerto }}"
+    red: "{{ vpn_movil_red }}"
+    ccd: false
 openvpn_clientes_destino_local: "{{ playbook_dir }}/../clientes-ovpn/"

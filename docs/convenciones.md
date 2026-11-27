@@ -30,11 +30,11 @@ Si algo de aquí cambia, se cambia **primero en este archivo**, en un PR, y desp
 
 | Elemento | Valor |
 |---|---|
-| Protocolo / interfaz | TCP / TAP, puerto 1194 (plan B: TCP 443) |
+| Protocolo / interfaz | TCP / TAP, puerto 1194 (plan B: TCP 443) · instancia `server` |
 | Subred | `10.8.0.0/24` · servidor `10.8.0.1` |
 | `web01` (IP fija por CCD) | `10.8.0.20`, sin `redirect-gateway` |
 | Laptop | Dinámica del pool, con `redirect-gateway` |
-| Teléfono | TUN aparte `10.9.0.0/24` si el profesor lo acepta ([pregunta #1](preguntas-profesor.md)) |
+| Teléfono | Instancia `movil`: TCP / **TUN**, puerto 1195, subred `10.9.0.0/24`, con `redirect-gateway`. Aceptado por el profesor sin root ([pregunta #1](preguntas-profesor.md)); TAP con root/jailbreak = extra +7,5 % |
 
 ## Dominios y nombres
 

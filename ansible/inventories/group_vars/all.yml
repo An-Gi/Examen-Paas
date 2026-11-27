@@ -12,13 +12,23 @@ vpn_dev: tap
 vpn_red: 10.8.0.0
 vpn_mascara: 255.255.255.0
 
+# Segunda instancia TUN solo para el teléfono: las apps de Android/iOS no soportan TAP sin root.
+# Aceptado por el profesor (2026-11-26, pregunta #1). Otro puerto porque dos procesos no pueden
+# escuchar en el mismo TCP 1194.
+vpn_movil_puerto: 1195
+vpn_movil_red: 10.9.0.0
+
 # Clientes: se genera un .ovpn por cada uno
 vpn_clientes:
   - nombre: laptop
   - nombre: web01
     ip_fija: 10.8.0.20                   # client-config-dir (ifconfig-push)
     sin_redirect_gateway: true           # solo túnel hacia el proxy
-  - nombre: telefono                     # TODO(A): TAP o TUN según la respuesta del profesor (#1)
+  - nombre: telefono
+    movil: true                          # instancia TUN (puerto {{ vpn_movil_puerto }})
+  # Extra +7,5 % (profesor, 2026-11-26): TAP en el teléfono con root/jailbreak. Descomentar
+  # para generar un perfil TAP normal e importarlo en un cliente con soporte TAP.
+  # - nombre: telefono-tap
 
 # Destino del reverse proxy (Fase 5)
 web01_ip_vpn: 10.8.0.20

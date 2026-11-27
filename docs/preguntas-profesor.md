@@ -4,7 +4,7 @@ Las envía **A** en la Fase 0 (0.6). Las respuestas se anotan aquí con su fecha
 
 | # | Pregunta | Por qué importa | Supuesto mientras no haya respuesta | Respuesta (fecha) |
 |---|---|---|---|---|
-| 1 | Las apps de OpenVPN para Android e iOS no soportan interfaces **TAP** sin root. ¿Se acepta una segunda instancia en **TUN** solo para el teléfono? | VPN (20 %) | Sí: TAP para laptop y `web01`, TUN para el móvil, justificado en la documentación | |
+| 1 | Las apps de OpenVPN para Android e iOS no soportan interfaces **TAP** sin root. ¿Se acepta una segunda instancia en **TUN** solo para el teléfono? | VPN (20 %) | Sí: TAP para laptop y `web01`, TUN para el móvil, justificado en la documentación | **Sí** (2026-11-26): no hay que rootear ni hacer jailbreak al teléfono. Hacerlo para usar TAP vale **+7,5 % extra** |
 | 2 | ¿Los contenedores auxiliares (MariaDB y Redis de OwnCloud, Roundcube, phpLDAPadmin) cuentan como servicios aparte? | Docker (30 %) | **No**: cada carpeta cuenta como 1 servicio | |
 | 3 | El FileServer se pide en FreeBSD con jails. ¿FTP y SMB en Docker sobre Linux cuentan para el rubro de Docker Compose? | Docker (30 %) | Sí, porque el rubro de Docker es independiente del FileServer | |
 | 4 | ¿Qué servicios se aceptan como **extra**? ¿Prometheus + Grafana cuenta como 1? | Extra (+10 %) | Sí: Prometheus + Grafana = 1 y Uptime Kuma = 1 | |
