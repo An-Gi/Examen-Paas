@@ -36,7 +36,7 @@ ldapsearch -x -H ldap://10.10.10.30 -b dc=paas,dc=internal    # 2 LDAP
 # 3 Email: enviar usuario1 → usuario2 en http://webmail.paas.internal:8082
 # TODO(B)
 # 4 OwnCloud: login y subir un archivo en http://cloud.paas.internal:8080
-curlftpfs ftp://USUARIO:CLAVE@10.10.10.30 /mnt/ftp && ls /mnt/ftp    # 5 FTP (desde web01)
+sudo bash ~/paas/docker/probar-montajes.sh ftp && ls /mnt/ftp         # 5 FTP (desde web01, rclone)
 sudo mount -t cifs //10.10.10.30/compartido /mnt/smb -o username=USUARIO   # 6 SMB (desde db01)
 ```
 

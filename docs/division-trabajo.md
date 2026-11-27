@@ -54,7 +54,7 @@ Las secciones §1 (Introducción), §7 (Lecciones aprendidas) y §8 (Bibliograf�
 | F1 | Verificación y documentación §4 (nativo + CA) | 1 | — |
 | F2 | Instalar el cliente VPN en `web01` con el `.ovpn` de A | 0,5 | F2 de A |
 | F3 | `04-owncloud`: OwnCloud + MariaDB + Redis | 3 | F0 |
-| F3 | `05-ftp`: pure-ftpd y montaje con `curlftpfs` desde otra VM | 2 | F0 |
+| F3 | `05-ftp`: pure-ftpd y montaje con `rclone mount` desde otra VM (`curlftpfs` no funciona en Ubuntu 26.04) | 2 | F0 |
 | F3 | `06-smb`: Samba y montaje `cifs` desde otra VM | 2 | F0 |
 | F4 | k3s y manifests (Namespace, Secret, MySQL StatefulSet, WP Deployment, Ingress) | 4 | F0 |
 | F4 | Demo de escalado y autorrecuperación, documentación §4 | 2 | — |
