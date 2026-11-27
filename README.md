@@ -14,8 +14,8 @@ Red de servicios segura, virtualizada en una sola máquina física:
 
 | Rol | Nombre | Usuario GitHub | Rubros a cargo | Peso a cargo |
 |---|---|---|---|---|
-| **Estudiante A** | Angie Esquivel | [@An-Gi](https://github.com/An-Gi) | VPN con IaC · Acceso público (DNS) · Docker: DNS, LDAP, Email · Extra 1 · Docs §2–§3 | 50 % |
-| **Estudiante B** | Alejandro Quesada | [@AleQuesada2012](https://github.com/AleQuesada2012) | DB + Web + CMS nativo (con CA) · CMS en Kubernetes · Docker: OwnCloud, FTP, SMB · Extra 2 · Docs §5–§6 + PDF | 50 % |
+| **Estudiante A** | Angie Esquivel | [@An-Gi](https://github.com/An-Gi) | VPN con IaC · Acceso público (DNS) · Docker: DNS, LDAP, Email · Extra: Schleuder · DNS público (BIND en EC2) · Docs §2–§3 | 50 % |
+| **Estudiante B** | Alejandro Quesada | [@AleQuesada2012](https://github.com/AleQuesada2012) | DB + Web + CMS nativo (con CA) · CMS en Kubernetes · Docker: OwnCloud, FileServer (FTP, SMB, NFS) · Extra: DHCP · Docs §5–§6 + PDF | 50 % |
 
 Roles y dominio acordados en el kick-off del 2026-11-25. Dominio público: **`examenpaas.tech`** (name.com, GitHub Student Developer Pack).
 Detalle, backlog y horas estimadas: [`docs/division-trabajo.md`](docs/division-trabajo.md).
@@ -65,8 +65,8 @@ Fuente editable del diagrama: [`docs/diagramas/red.mmd`](docs/diagramas/red.mmd)
 │   ├── 01-dns-bind9   A        04-owncloud  B
 │   ├── 02-ldap        A        05-ftp       B
 │   ├── 03-email       A        06-smb       B
-│   ├── 90-respaldo-dhcp  (servicio de respaldo, perfil desactivado)
-│   └── extras/        monitoreo (A) · uptime-kuma (B) ........... Fase 6 (+10 %)
+│   ├── 07-dhcp        B (extra)  08-schleuder A (extra) ........ Fase 6 (+10 %, ADR-0003)
+│   └── extras/        uptime-kuma: panel de apoyo, no se cuenta
 ├── k8s/             B · WordPress en k3s ......................... Fase 4 (10 %)
 ├── dns-publico/     A · Registro público y verificación .......... Fase 5 (10 %)
 ├── scripts/         Utilidades: entorno, VMs, bitácora, commits
@@ -80,13 +80,13 @@ Cada carpeta tiene un `README.md` con: responsable, criterios de "terminado", **
 
 | Rubro | Peso | Responsable | Carpeta | Estado |
 |---|---|---|---|---|
-| 6 servicios con Docker Compose | 30 % | A (3) + B (3) | `docker/` | ⬜ |
+| 6 servicios con Docker Compose | 30 % | A (3) + B (3) | `docker/` | 🟨 (B: 3/3 ✅) |
 | DB + WebServer + CMS sin contenedores | 20 % | B | `nativo/`, `ca/` | ✅ |
 | VPN con IaC (Terraform + Ansible) | 20 % | A | `terraform/`, `ansible/` | ⬜ |
 | CMS con Kubernetes | 10 % | B | `k8s/` | ✅ |
 | Acceso público al CMS con dominio | 10 % | A | `dns-publico/`, `ansible/roles/nginx_proxy` | ⬜ |
 | Documentación | 10 % | A + B | `docs/` | ⬜ |
-| Extra (máx. 2 servicios) | +10 % | A (1) + B (1) | `docker/extras/` | ⬜ |
+| Extra (máx. 2 servicios, del enunciado) | +10 % | A (Schleuder) + B (DHCP) | `docker/07-dhcp`, `docker/08-schleuder` | ⬜ |
 
 Leyenda: ⬜ pendiente · 🟨 en progreso · ✅ demostrable · 🔒 snapshot tomado
 

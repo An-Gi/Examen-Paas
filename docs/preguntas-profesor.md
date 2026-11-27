@@ -1,16 +1,18 @@
 # Preguntas para el profesor
 
-Las envía **A** en la Fase 0 (0.6). Las respuestas se anotan aquí con su fecha y se citan en la documentación cuando justifiquen una decisión.
+Las preguntas eran tarea de **A** en la Fase 0 (0.6). La #1 la consultó A y B anotó el resto de las respuestas. Cada respuesta se anota aquí con su fecha y se cita en la documentación cuando justifica una decisión.
+
+**Criterio:** si la respuesta es vaga o no llegó, se toma la lectura **más conservadora** del enunciado. Las decisiones que salen de estas respuestas están en [ADR-0003](decisiones/0003-alcance-servicios-respuestas-profesor.md).
 
 | # | Pregunta | Por qué importa | Supuesto mientras no haya respuesta | Respuesta (fecha) |
 |---|---|---|---|---|
 | 1 | Las apps de OpenVPN para Android e iOS no soportan interfaces **TAP** sin root. ¿Se acepta una segunda instancia en **TUN** solo para el teléfono? | VPN (20 %) | Sí: TAP para laptop y `web01`, TUN para el móvil, justificado en la documentación | **Sí** (2026-11-26): no hay que rootear ni hacer jailbreak al teléfono. Hacerlo para usar TAP vale **+7,5 % extra** |
-| 2 | ¿Los contenedores auxiliares (MariaDB y Redis de OwnCloud, Roundcube, phpLDAPadmin) cuentan como servicios aparte? | Docker (30 %) | **No**: cada carpeta cuenta como 1 servicio | |
-| 3 | El FileServer se pide en FreeBSD con jails. ¿FTP y SMB en Docker sobre Linux cuentan para el rubro de Docker Compose? | Docker (30 %) | Sí, porque el rubro de Docker es independiente del FileServer | |
-| 4 | ¿Qué servicios se aceptan como **extra**? ¿Prometheus + Grafana cuenta como 1? | Extra (+10 %) | Sí: Prometheus + Grafana = 1 y Uptime Kuma = 1 | |
-| 5 | Para "acceso público con dominio", ¿sirve un subdominio gratuito (DuckDNS) o debe ser un dominio propio? | DNS (10 %) | Dominio propio: **`examenpaas.tech`** (name.com, Student Pack), reservado el 2026-11-25 | |
-| 6 | ¿Cuenta de AWS propia o AWS Academy Learner Lab? | VPN (20 %) | Cuenta propia con presupuesto de USD 5 | |
-| 7 | ¿La red de la universidad permite salida a TCP 1194? ¿Podemos usar nuestro propio hotspot en la defensa? | Demo | Plan B: OpenVPN en TCP 443 o hotspot | |
-| 8 | ¿El CMS en Kubernetes puede tener su propia base de datos en el clúster o debe usar la de `db01`? | K8s (10 %) | Base propia (StatefulSet) | |
-| 9 | ¿El DNS interno (BIND en Docker) puede contar como servicio Docker **y** apoyar el rubro de DNS? | Docker / DNS | Sí | |
-| 10 | Fecha y hora de la defensa, y reglas exactas del formato de entrega en Google Drive (nombres de archivos y carpetas) | Logística (nota 0 si no se cumple) | — | |
+| 2 | ¿Los contenedores auxiliares (MariaDB y Redis de OwnCloud, Roundcube, phpLDAPadmin) cuentan como servicios aparte? | Docker (30 %) | **No**: cada carpeta cuenta como 1 servicio | **No** (2026-11-27): "solo lo que está en el enunciado cuenta como servicio". Cada carpeta = 1 servicio |
+| 3 | El FileServer se pide en FreeBSD con jails. ¿FTP y SMB en Docker sobre Linux cuentan para el rubro de Docker Compose? | Docker (30 %) | Sí, porque el rubro de Docker es independiente del FileServer | **Vaga** (2026-11-27): repitió "solo lo que está en el enunciado cuenta como servicio". Lectura conservadora: FTP + SMB podrían contar como **un** servicio (FileServer). Se agregan DHCP y Schleuder para no depender de ese conteo, y NFS para completar el FileServer ([ADR-0003](decisiones/0003-alcance-servicios-respuestas-profesor.md) §1) |
+| 4 | ¿Qué servicios se aceptan como **extra**? ¿Prometheus + Grafana cuenta como 1? | Extra (+10 %) | Sí: Prometheus + Grafana = 1 y Uptime Kuma = 1 | (2026-11-27) Los extras también pueden salir del enunciado: es extra **cualquier servicio por encima de los seis**. Se eligen **DHCP y Schleuder** por fiabilidad y facilidad; Prometheus/Grafana y Uptime Kuma dejan de contarse ([ADR-0003](decisiones/0003-alcance-servicios-respuestas-profesor.md) §2) |
+| 5 | Para "acceso público con dominio", ¿sirve un subdominio gratuito (DuckDNS) o debe ser un dominio propio? | DNS (10 %) | Dominio propio: **`examenpaas.tech`** (name.com, Student Pack), reservado el 2026-11-25 | **Dominio propio** (2026-11-27): se usa `examenpaas.tech` |
+| 6 | ¿Cuenta de AWS propia o AWS Academy Learner Lab? | VPN (20 %) | Cuenta propia con presupuesto de USD 5 | **Cuenta propia** (2026-11-27): es la que A ya configuró y probó en la F2 |
+| 7 | ¿La red de la universidad permite salida a TCP 1194? ¿Podemos usar nuestro propio hotspot en la defensa? | Demo | Plan B: OpenVPN en TCP 443 o hotspot | **Hotspot propio permitido** (2026-11-27): se usa el equipo Linksys del grupo, así que no dependemos de los puertos de la red de la universidad. TCP 443 queda como plan C |
+| 8 | ¿El CMS en Kubernetes puede tener su propia base de datos en el clúster o debe usar la de `db01`? | K8s (10 %) | Base propia (StatefulSet) | **Sin respuesta.** Lectura conservadora: el clúster es de un nodo, y una base dentro de él estaría en el mismo servidor que el CMS (prohibido en el WebServer). El CMS de k3s usa **`db01`** con su propia base `wordpress_k8s` ([ADR-0003](decisiones/0003-alcance-servicios-respuestas-profesor.md) §4) |
+| 9 | ¿El DNS interno (BIND en Docker) puede contar como servicio Docker **y** apoyar el rubro de DNS? | Docker / DNS | Sí | **Sí, pero prefiere un DNS dedicado** (2026-11-27). Propuesta: BIND autoritativo para `examenpaas.tech` en la EC2, delegado desde name.com. El BIND de Docker queda para `paas.internal` ([ADR-0003](decisiones/0003-alcance-servicios-respuestas-profesor.md) §5, decide A) |
+| 10 | Fecha y hora de la defensa, y reglas exactas del formato de entrega en Google Drive (nombres de archivos y carpetas) | Logística (nota 0 si no se cumple) | — | **Pendiente** (2026-11-27) |

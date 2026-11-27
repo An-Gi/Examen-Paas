@@ -20,7 +20,7 @@
 | 11–15 | VPN con IaC | 20 % | A | `terraform plan`, playbook, `curl ifconfig.me` = IP de AWS, teléfono |
 | 15–17 | CMS en Kubernetes | 10 % | B | `kubectl get all`, `scale`, borrar un pod |
 | 17–19 | Acceso público con dominio | 10 % | A | `cms.examenpaas.tech` desde el teléfono con datos móviles |
-| 19–20 | Extras | +10 % | A · B | Grafana · Uptime Kuma |
+| 19–20 | Extras (servicios del enunciado, ADR-0003) | +10 % | A · B | Schleuder: correo cifrado re-cifrado a la lista · DHCP: VM en `wan-dhcp` recibe IP |
 
 > En los ensayos se **invierten los roles** (A presenta lo de B y viceversa), porque el profesor puede preguntarle a cualquiera.
 
@@ -36,7 +36,7 @@ ldapsearch -x -H ldap://10.10.10.30 -b dc=paas,dc=internal    # 2 LDAP
 # 3 Email: enviar usuario1 → usuario2 en http://webmail.paas.internal:8082
 # TODO(B)
 # 4 OwnCloud: login y subir un archivo en http://cloud.paas.internal:8080
-curlftpfs ftp://USUARIO:CLAVE@10.10.10.30 /mnt/ftp && ls /mnt/ftp    # 5 FTP (desde web01)
+sudo bash ~/paas/docker/probar-montajes.sh ftp && ls /mnt/ftp         # 5 FTP (desde web01, rclone)
 sudo mount -t cifs //10.10.10.30/compartido /mnt/smb -o username=USUARIO   # 6 SMB (desde db01)
 ```
 

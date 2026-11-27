@@ -1,27 +1,33 @@
 # Servicio 5/6 · FileServer FTP (pure-ftpd) — Responsable: Estudiante B (Fase 3)
-# Demo (desde web01 o db01, "punto de montaje en un cliente Linux"):
-#   sudo apt install -y curlftpfs && sudo mkdir -p /mnt/ftp
-#   sudo curlftpfs -o allow_other ftp://USUARIO:CLAVE@10.10.10.30 /mnt/ftp && ls /mnt/ftp
-# Modo pasivo: el servidor anuncia PUBLICHOST y un rango de puertos que también se publica.
+# Demo ("punto de montaje en un cliente Linux", desde web01 o db01):
+#   bash ~/paas/docker/probar-montajes.sh ftp
+# El usuario virtual se crea una vez:  bash docker/05-ftp/crear-usuario.sh   (en docker01)
+#
+# FTP usa dos conexiones: control (21) y datos. En modo PASIVO el cliente abre la de datos hacia
+# un puerto que el servidor anuncia: por eso se publica el rango 30000-30009 y se fuerza la IP
+# anunciada (PASSIVE_IP). Sin eso, el contenedor anunciaría su IP interna de Docker (172.x).
 services:
   ftp:
-    image: stilliard/pure-ftpd:latest   # TODO(B): sin arm64 -> crazymax/pure-ftpd:1.0.54 y adaptar variables (ADR-0002)
+    image: crazymax/pure-ftpd:1.0.54   # stilliard/pure-ftpd no tiene arm64 (ADR-0002)
     container_name: ftp
     restart: unless-stopped
     environment:
-      PUBLICHOST: ${IP_DOCKER01:-10.10.10.30}
-      FTP_PASSIVE_PORTS: "30000:30009"
-      FTP_USER_NAME: ${FTP_USER:?definir en docker/.env}
-      FTP_USER_PASS: ${FTP_PASSWORD:?definir en docker/.env}
-      FTP_USER_HOME: /home/ftpusers/${FTP_USER}
-      # TODO(B): ¿FTPS (--tls) con un certificado de nuestra CA? Documentarlo si se hace.
+      TZ: ${TZ:-America/Costa_Rica}
+      AUTH_METHOD: puredb          # usuarios virtuales en /data/pureftpd.pdb, no del sistema
+      PASSIVE_IP: ${IP_DOCKER01:-10.10.10.30}
+      PASSIVE_PORT_RANGE: "30000:30009"
+      # El modo seguro de la imagen incluye --norename y un máximo de 5 clientes: rompe el "mv"
+      # en el montaje y limita los clientes. Se apaga y se eligen las banderas en pureftpd.flags.
+      SECURE_MODE: "false"
     ports:
-      - "${IP_DOCKER01:-10.10.10.30}:21:21"
+      # El contenedor escucha en 2100; para los clientes es el 21 estándar
+      - "${IP_DOCKER01:-10.10.10.30}:21:2100"
       - "${IP_DOCKER01:-10.10.10.30}:30000-30009:30000-30009"
     volumes:
-      - ftp_data:/home/ftpusers
-      - ftp_passwd:/etc/pure-ftpd/passwd
+      - ftp_data:/data
+      - ./pureftpd.flags:/data/pureftpd.flags:ro
+      - ftp_home:/home/ftpusers
 
 volumes:
-  ftp_data:
-  ftp_passwd:
+  ftp_data:   # base de usuarios (pureftpd.passwd / .pdb)
+  ftp_home:   # archivos de los usuarios

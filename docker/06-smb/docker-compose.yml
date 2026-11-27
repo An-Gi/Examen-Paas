@@ -1,21 +1,24 @@
 # Servicio 6/6 · FileServer SMB (Samba) — Responsable: Estudiante B (Fase 3)
-# Demo (desde db01 o web01):
-#   sudo apt install -y cifs-utils && sudo mkdir -p /mnt/smb
-#   sudo mount -t cifs //10.10.10.30/compartido /mnt/smb -o username=USUARIO,vers=3.0
-#   echo hola | sudo tee /mnt/smb/prueba.txt && ls -l /mnt/smb
+# Demo ("punto de montaje en un cliente Linux", desde web01 o db01):
+#   bash ~/paas/docker/probar-montajes.sh smb
+# SMB 2/3 va todo por TCP 445 (SMB directo sobre TCP). El 139 (NetBIOS) es de SMB1 y no se publica.
 services:
   samba:
-    image: dockurr/samba:latest   # TODO(B): fijar versión y confirmar los nombres de las variables
+    image: dockurr/samba:4.23.10
     container_name: samba
     restart: unless-stopped
     environment:
-      NAME: compartido
+      NAME: compartido                       # nombre del recurso: //10.10.10.30/compartido
       USER: ${SMB_USER:?definir en docker/.env}
       PASS: ${SMB_PASSWORD:?definir en docker/.env}
+      UID: "1000"
+      GID: "1000"
+      RW: "true"
+      TZ: ${TZ:-America/Costa_Rica}
     ports:
       - "${IP_DOCKER01:-10.10.10.30}:445:445"
     volumes:
-      - smb_data:/storage
+      - smb_data:/shared
 
 volumes:
   smb_data:

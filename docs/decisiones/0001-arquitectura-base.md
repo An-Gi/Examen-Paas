@@ -3,7 +3,7 @@
 - **Estado:** Aceptada (kick-off del 2026-11-25)
 - **Fecha:** 2026-11-24
 - **Autor:** Estudiante A + Estudiante B
-- **Modificada por:** [ADR-0002](0002-anfitriona-mac-arm64.md) (anfitriona Mac con VMs Ubuntu 26.04 ARM64, red `hostonlynet`, RAM recortada)
+- **Modificada por:** [ADR-0002](0002-anfitriona-mac-arm64.md) (anfitriona Mac con VMs Ubuntu 26.04 ARM64, red `hostonlynet`, RAM recortada) y [ADR-0003](0003-alcance-servicios-respuestas-profesor.md) (servicios, extras, DNS dedicado y BD del CMS en k3s, según las respuestas del profesor)
 
 ## Contexto
 
