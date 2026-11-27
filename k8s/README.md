@@ -4,6 +4,8 @@
 
 WordPress + MySQL en un clúster k3s de un nodo, en `k8s01` (10.10.10.40). Se publica con el Ingress Traefik que trae k3s en `http://cms-k8s.paas.internal`.
 
+> **Cambio pendiente (F4, [ADR-0003](../docs/decisiones/0003-alcance-servicios-respuestas-profesor.md) §4):** la base de datos sale del clúster. WordPress usará la base `wordpress_k8s` de `db01` por medio de un `Service` sin selector con un `Endpoints` a `10.10.10.10:3306`, y `02-mysql.yaml` (StatefulSet) se elimina. Lo que sigue describe el diseño anterior hasta que se haga la F4.
+
 ```
 k8s/
 ├── instalar-k3s.sh

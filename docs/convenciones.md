@@ -17,13 +17,13 @@ Si algo de aquí cambia, se cambia **primero en este archivo**, en un PR, y desp
 | anfitrión | 10.10.10.1 | `bridgeN` (vmnet) | Navegador de la demo, cliente VPN | — | — | A + B |
 | `db01` | 10.10.10.10 | enp0s9 | MySQL 8 nativo | 1 GB | 1 | B |
 | `web01` | 10.10.10.20 | enp0s9 | Apache + PHP + WordPress, cliente VPN | 1,5 GB | 1 | B |
-| `docker01` | 10.10.10.30 | enp0s9 | Docker Compose (6 servicios + extras) | 3,5 GB | 2 | A + B |
+| `docker01` | 10.10.10.30 | enp0s9 | Docker Compose (8 servicios del enunciado, ADR-0003) | 3,5 GB | 2 | A + B |
 | `k8s01` | 10.10.10.40 | enp0s9 | k3s + WordPress | 3 GB | 2 | B |
 | EC2 `vpn` | IP elástica | ens5 | OpenVPN + Nginx reverse proxy | t3.micro | 2 | A |
 
 - VMs ARM64 ([ADR-0002](decisiones/0002-anfitriona-mac-arm64.md), comprobado en la plantilla): **`enp0s8` = NAT** (salida a Internet, ruta por defecto) y **`enp0s9` = LAN**, sin gateway. Es al revés que en x86 (`enp0s3` NAT, `enp0s8` LAN); los scripts detectan la NIC de la LAN en lugar de suponer el nombre.
 - RAM total de las VMs: 9 GB (recortada para la anfitriona de 16 GB).
-- Rango `10.10.10.2–9`: DHCP de vmnet en `lan-paas` (el anfitrión toma `.1`). Rango `10.10.10.100–150`: DHCP de respaldo. Nunca usar esas IPs como fijas.
+- Rango `10.10.10.2–9`: DHCP de vmnet en `lan-paas` (el anfitrión toma `.1`). Nunca usar esas IPs como fijas. El DHCP de Docker (`07-dhcp`) **no** sirve en `lan-paas`: va en la red interna `wan-dhcp`, que se define en la F3 (ADR-0003 §3).
 - Usuario de las VMs: **`zekken`** (creado al instalar la plantilla y heredado por los clones), con acceso solo por llave SSH y `sudo`.
 
 ## Red VPN
@@ -65,9 +65,9 @@ Todos se publican **solo en `10.10.10.30`**, no en `0.0.0.0`. Así se evita, por
 | 8080 | OwnCloud | `04-owncloud` | B |
 | 21, 30000–30009 | pure-ftpd (pasivo) | `05-ftp` | B |
 | 445 | Samba | `06-smb` | B |
-| 67/udp (host) | DHCP (respaldo, apagado) | `90-respaldo-dhcp` | B |
-| 3000, 9090 | Grafana, Prometheus | `extras/monitoreo` | A |
-| 3001 | Uptime Kuma | `extras/uptime-kuma` | B |
+| 2049 | NFS v4 (completa el FileServer) | `06-smb` o carpeta propia, se decide en la F3 | B |
+| 67/udp (host, solo en `wan-dhcp`) | DHCP (extra) | `07-dhcp` | B |
+| 3001 | Uptime Kuma (panel de apoyo, no se cuenta) | `extras/uptime-kuma` | B |
 
 ## Secretos
 

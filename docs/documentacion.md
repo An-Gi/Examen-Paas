@@ -108,15 +108,19 @@ Máquina anfitriona: _CPU, RAM, disco, SO._
 
 ### SMB (Samba) — Estudiante B
 
+### NFS (completa el FileServer) — Estudiante B
+
 ## CMS en Kubernetes (k3s) — Estudiante B
 
 ## Acceso público al CMS con dominio — Estudiante A
 
 ## Extras
 
-### Prometheus + Grafana — Estudiante A
+<!-- Extras = servicios del enunciado por encima de los seis (respuesta del profesor a la pregunta #4, ADR-0003). -->
 
-### Uptime Kuma — Estudiante B
+### Encrypted Mail List Server (Schleuder) — Estudiante A
+
+### DHCP (dhcpd) — Estudiante B
 
 # Actividades realizadas por estudiante
 
