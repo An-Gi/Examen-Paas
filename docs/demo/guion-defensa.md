@@ -20,7 +20,7 @@
 | 11–15 | VPN con IaC | 20 % | A | `terraform plan`, playbook, `curl ifconfig.me` = IP de AWS, teléfono |
 | 15–17 | CMS en Kubernetes | 10 % | B | `kubectl get all`, `scale`, borrar un pod |
 | 17–19 | Acceso público con dominio | 10 % | A | `cms.examenpaas.tech` desde el teléfono con datos móviles |
-| 19–20 | Extras | +10 % | A · B | Grafana · Uptime Kuma |
+| 19–20 | Extras (servicios del enunciado, ADR-0003) | +10 % | A · B | Schleuder: correo cifrado re-cifrado a la lista · DHCP: VM en `wan-dhcp` recibe IP |
 
 > En los ensayos se **invierten los roles** (A presenta lo de B y viceversa), porque el profesor puede preguntarle a cualquiera.
 

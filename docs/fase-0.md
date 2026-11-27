@@ -326,7 +326,7 @@ ansible --version && ansible localhost -m ping
 
 ## 0.6 Preguntas al profesor y backlog (Estudiante A, 30 min)
 
-- [ ] Enviar al profesor las preguntas de [`preguntas-profesor.md`](preguntas-profesor.md). Las más urgentes son TAP en el teléfono, si los contenedores auxiliares cuentan como servicio, cuáles extras se aceptan y la fecha de la defensa. Anotar cada respuesta con su fecha.
+- [x] Enviar al profesor las preguntas de [`preguntas-profesor.md`](preguntas-profesor.md) (respuestas anotadas el 2026-11-27, ver ADR-0003; solo falta la #10). Las más urgentes son TAP en el teléfono, si los contenedores auxiliares cuentan como servicio, cuáles extras se aceptan y la fecha de la defensa. Anotar cada respuesta con su fecha.
 - [ ] Crear en GitHub las etiquetas `estudiante-a`, `estudiante-b`, `fase-1` … `fase-7` y `bloqueado`.
 - [ ] Crear un issue por cada tarea del backlog de [`division-trabajo.md`](division-trabajo.md) con la plantilla *Tarea*. Por ejemplo:
 
