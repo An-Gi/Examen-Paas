@@ -1,0 +1,83 @@
+<powershell>
+# Arranque del Windows Domain Controller — Estudiante A (Fase 3). Lo genera Terraform (ad.tf).
+# EC2Launch lo ejecuta en CADA arranque (<persist>): C:\paas\etapa recuerda por dónde va, porque
+# renombrar el equipo y promoverlo a controlador de dominio exigen un reinicio cada uno.
+#   0 -> contraseña de Administrator, nombre dc01 ............................ reinicio
+#   1 -> rol AD DS y bosque nuevo ${dominio} (con DNS integrado) ............ reinicio
+#   2 -> OU, grupo, cuenta de servicio para la sincronización y 2 usuarios de prueba
+#   3 -> terminado (no hace nada)
+# Registro: C:\paas\bootstrap.log (conectarse por RDP a través de la VPN)
+$ErrorActionPreference = 'Stop'
+New-Item -ItemType Directory -Force -Path C:\paas | Out-Null
+Start-Transcript -Append -Path C:\paas\bootstrap.log | Out-Null
+$archivoEtapa = 'C:\paas\etapa'
+$etapa = if (Test-Path $archivoEtapa) { [int](Get-Content $archivoEtapa) } else { 0 }
+function Pasar-A([int]$n) { Set-Content -Path $archivoEtapa -Value $n }
+function Clave([string]$texto) { ConvertTo-SecureString $texto -AsPlainText -Force }
+
+$dominio = '${dominio}'
+$base    = ($dominio.Split('.') | ForEach-Object { "DC=$_" }) -join ','
+
+if ($etapa -eq 0) {
+  Write-Output "Etapa 0: Administrator y nombre del equipo"
+  # Al promover el servidor, esta pasa a ser la contraseña del Administrator del dominio
+  Set-LocalUser -Name Administrator -Password (Clave '${pass_admin}')
+  # Ping desde la VPN (diagnóstico); RDP ya viene habilitado en la AMI de AWS
+  Enable-NetFirewallRule -Name FPS-ICMP4-ERQ-In
+  Pasar-A 1
+  Rename-Computer -NewName dc01 -Force -Restart
+  exit
+}
+
+if ($etapa -eq 1) {
+  Write-Output "Etapa 1: rol AD DS y bosque $dominio"
+  Install-WindowsFeature AD-Domain-Services -IncludeManagementTools | Out-Null
+  Pasar-A 2
+  # -InstallDns: el DC resuelve su propia zona; el BIND de docker01 no la necesita
+  Install-ADDSForest -DomainName $dominio -DomainNetbiosName '${netbios}' `
+    -SafeModeAdministratorPassword (Clave '${pass_admin}') -InstallDns -Force -NoRebootOnCompletion | Out-Null
+  Restart-Computer -Force
+  exit
+}
+
+if ($etapa -eq 2) {
+  Write-Output "Etapa 2: objetos de la demo"
+  # Los servicios de AD tardan unos minutos en responder después del reinicio
+  for ($i = 0; $i -lt 60; $i++) { try { Get-ADDomain | Out-Null; break } catch { Start-Sleep 10 } }
+
+  foreach ($ou in 'Usuarios', 'Servicios') {
+    if (-not (Get-ADOrganizationalUnit -Filter "Name -eq '$ou'")) {
+      New-ADOrganizationalUnit -Name $ou -Path $base
+    }
+  }
+  $ouUsuarios  = "OU=Usuarios,$base"
+  $ouServicios = "OU=Servicios,$base"
+
+  # Cuenta de solo lectura que usa el sincronizador de docker01 para leer el directorio
+  if (-not (Get-ADUser -Filter "SamAccountName -eq 'svc-sync'")) {
+    New-ADUser -Name 'svc-sync' -SamAccountName 'svc-sync' -Path $ouServicios `
+      -Description 'Lectura del directorio para la sincronizacion con OpenLDAP' `
+      -AccountPassword (Clave '${pass_sync}') -PasswordNeverExpires $true -Enabled $true
+  }
+
+  if (-not (Get-ADGroup -Filter "Name -eq 'Estudiantes'")) {
+    New-ADGroup -Name 'Estudiantes' -GroupScope Global -GroupCategory Security -Path $ouUsuarios
+  }
+  $usuarios = @(
+    @{ sam = 'ana.mora';    nombre = 'Ana';  apellido = 'Mora' },
+    @{ sam = 'luis.vargas'; nombre = 'Luis'; apellido = 'Vargas' }
+  )
+  foreach ($u in $usuarios) {
+    if (-not (Get-ADUser -Filter "SamAccountName -eq '$($u.sam)'")) {
+      New-ADUser -Name "$($u.nombre) $($u.apellido)" -SamAccountName $u.sam -GivenName $u.nombre `
+        -Surname $u.apellido -UserPrincipalName "$($u.sam)@$dominio" -EmailAddress "$($u.sam)@paas.internal" `
+        -Path $ouUsuarios -AccountPassword (Clave '${pass_usuarios}') -Enabled $true
+      Add-ADGroupMember -Identity 'Estudiantes' -Members $u.sam
+    }
+  }
+  Pasar-A 3
+  Write-Output "Listo: $(Get-ADUser -Filter * -SearchBase $ouUsuarios | Measure-Object | Select-Object -ExpandProperty Count) usuarios en $ouUsuarios"
+}
+Stop-Transcript | Out-Null
+</powershell>
+<persist>true</persist>

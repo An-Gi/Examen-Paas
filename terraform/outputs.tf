@@ -14,3 +14,8 @@ output "ssh" {
   description = "Comando para entrar a la EC2"
   value       = "ssh -i ${pathexpand(trimsuffix(var.ruta_llave_publica, ".pub"))} ubuntu@${aws_eip.vpn.public_ip}"
 }
+
+output "ad_ip_privada" {
+  description = "IP privada del AD (solo alcanzable por la VPN): RDP y LDAP 389"
+  value       = var.crear_ad ? aws_instance.ad[0].private_ip : null
+}
