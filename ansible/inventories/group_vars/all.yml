@@ -24,11 +24,18 @@ vpn_clientes:
   - nombre: web01
     ip_fija: 10.8.0.20                   # client-config-dir (ifconfig-push)
     sin_redirect_gateway: true           # solo túnel hacia el proxy
+  - nombre: docker01                     # sincronización AD -> OpenLDAP (Fase 3, ADR-0004)
+    ip_fija: 10.8.0.30
+    sin_redirect_gateway: true           # sus servicios siguen saliendo por la LAN
+    rutas: ["{{ vpc_cidr_red }} {{ vpc_cidr_mascara }}"]   # solo la red de AWS, donde vive el AD
   - nombre: telefono
     movil: true                          # instancia TUN (puerto {{ vpn_movil_puerto }})
   # Extra +7,5 % (profesor, 2026-11-26): TAP en el teléfono con root/jailbreak. Descomentar
   # para generar un perfil TAP normal e importarlo en un cliente con soporte TAP.
   # - nombre: telefono-tap
 
+# Red de la VPC por defecto (us-east-2): allí está el AD (terraform output ad_ip_privada)
+vpc_cidr_red: 172.31.0.0
+vpc_cidr_mascara: 255.255.0.0
 # Destino del reverse proxy (Fase 5)
 web01_ip_vpn: 10.8.0.20
