@@ -58,16 +58,30 @@ resource "aws_instance" "ad" {
   # Sin key_name: EC2 solo cifra la contraseña de Windows con llaves RSA y la nuestra es ed25519.
   # La contraseña de Administrator la fija el script de arranque.
 
-  # Instala el AD en tres etapas con reinicios entre ellas (templates/ad-bootstrap.ps1.tftpl).
+  # Instala el AD en cuatro etapas con reinicios entre ellas (templates/ad-bootstrap.ps1.tftpl).
   # Ojo: el user_data queda legible en los metadatos de la instancia; riesgo aceptado en el examen.
-  user_data = templatefile("${path.module}/templates/ad-bootstrap.ps1.tftpl", {
-    dominio       = var.ad_dominio
-    netbios       = var.ad_netbios
-    pass_admin    = var.ad_password_admin
-    pass_sync     = var.ad_password_sync
-    pass_usuarios = var.ad_password_usuarios
+  # Formato nativo de EC2Launch v2 (YAML): frequency = always hace que corra en cada arranque.
+  user_data = yamlencode({
+    version = "1.0"
+    tasks = [{
+      task = "executeScript"
+      inputs = [{
+        frequency = "always"
+        type      = "powershell"
+        runAs     = "localSystem"
+        content = templatefile("${path.module}/templates/ad-bootstrap.ps1.tftpl", {
+          dominio       = var.ad_dominio
+          netbios       = var.ad_netbios
+          pass_admin    = var.ad_password_admin
+          pass_sync     = var.ad_password_sync
+          pass_usuarios = var.ad_password_usuarios
+        })
+      }]
+    }]
   })
-  user_data_replace_on_change = true
+  # false: un cambio en el script se aplica deteniendo y encendiendo la instancia (no reinstala el AD);
+  # el script corre en cada arranque y C:\paas\etapa evita repetir lo ya hecho.
+  user_data_replace_on_change = false
 
   root_block_device {
     volume_type = "gp3"

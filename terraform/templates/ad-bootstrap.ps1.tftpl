@@ -1,11 +1,17 @@
-<powershell>
 # Arranque del Windows Domain Controller — Estudiante A (Fase 3). Lo genera Terraform (ad.tf).
-# EC2Launch lo ejecuta en CADA arranque (<persist>): C:\paas\etapa recuerda por dónde va, porque
+# EC2Launch v2 lo ejecuta en CADA arranque (frequency: always, en ad.tf): C:\paas\etapa recuerda por dónde va, porque
 # renombrar el equipo y promoverlo a controlador de dominio exigen un reinicio cada uno.
+# Para reiniciar, el script termina con "exit 3010" y EC2Launch reinicia y lo vuelve a ejecutar.
+# NO usar Restart-Computer: corta al agente antes de que programe la siguiente ejecución, y el
+# arranque se queda en la etapa 1 para siempre (pasó en la primera prueba, 2026-11-28).
+# Tampoco sirve el formato XML con <persist>true</persist>: EC2Launch v2 lo ignora
+# (IsUserDataScheduledPerBoot=false en la consola) y el script no vuelve a correr tras un stop/start.
 #   0 -> contraseña de Administrator, nombre dc01 ............................ reinicio
 #   1 -> rol AD DS y bosque nuevo ${dominio} (con DNS integrado) ............ reinicio
 #   2 -> OU, grupo, cuenta de servicio para la sincronización y 2 usuarios de prueba
-#   3 -> terminado (no hace nada)
+#   3 -> CA de Windows (AD CS): el DC recibe su certificado y habilita LDAPS (636). Windows Server
+#        2025 rechaza el bind simple sin firma ni TLS por el 389 ("Strong(er) authentication required").
+#   4 -> terminado (no hace nada)
 # Registro: C:\paas\bootstrap.log (conectarse por RDP a través de la VPN)
 $ErrorActionPreference = 'Stop'
 New-Item -ItemType Directory -Force -Path C:\paas | Out-Null
@@ -24,9 +30,10 @@ if ($etapa -eq 0) {
   Set-LocalUser -Name Administrator -Password (Clave '${pass_admin}')
   # Ping desde la VPN (diagnóstico); RDP ya viene habilitado en la AMI de AWS
   Enable-NetFirewallRule -Name FPS-ICMP4-ERQ-In
+  Rename-Computer -NewName dc01 -Force
   Pasar-A 1
-  Rename-Computer -NewName dc01 -Force -Restart
-  exit
+  Stop-Transcript | Out-Null
+  exit 3010
 }
 
 if ($etapa -eq 1) {
@@ -36,8 +43,8 @@ if ($etapa -eq 1) {
   # -InstallDns: el DC resuelve su propia zona; el BIND de docker01 no la necesita
   Install-ADDSForest -DomainName $dominio -DomainNetbiosName '${netbios}' `
     -SafeModeAdministratorPassword (Clave '${pass_admin}') -InstallDns -Force -NoRebootOnCompletion | Out-Null
-  Restart-Computer -Force
-  exit
+  Stop-Transcript | Out-Null
+  exit 3010
 }
 
 if ($etapa -eq 2) {
@@ -76,8 +83,29 @@ if ($etapa -eq 2) {
     }
   }
   Pasar-A 3
-  Write-Output "Listo: $(Get-ADUser -Filter * -SearchBase $ouUsuarios | Measure-Object | Select-Object -ExpandProperty Count) usuarios en $ouUsuarios"
+  Write-Output "Usuarios en OU=Usuarios: $(Get-ADUser -Filter * -SearchBase $ouUsuarios | Measure-Object | Select-Object -ExpandProperty Count)"
+  $etapa = 3
+}
+
+if ($etapa -eq 3) {
+  Write-Output "Etapa 3: CA empresarial (AD CS) para LDAPS"
+  if (-not (Get-WindowsFeature ADCS-Cert-Authority).Installed) {
+    Install-WindowsFeature ADCS-Cert-Authority -IncludeManagementTools | Out-Null
+  }
+  try {
+    Install-AdcsCertificationAuthority -CAType EnterpriseRootCA -CACommonName 'PAAS-AD-CA' `
+      -KeyLength 2048 -HashAlgorithmName SHA256 -ValidityPeriod Years -ValidityPeriodUnits 5 -Force | Out-Null
+  } catch { Write-Output "AD CS ya estaba configurada: $($_.Exception.Message)" }
+  # El DC pide su certificado "Domain Controller" por autoinscripción; se fuerza para no esperar
+  for ($i = 0; $i -lt 30; $i++) {
+    certutil -pulse | Out-Null
+    $cert = Get-ChildItem Cert:\LocalMachine\My | Where-Object { $_.EnhancedKeyUsageList.FriendlyName -contains 'Server Authentication' }
+    if ($cert) { break }
+    Start-Sleep 10
+  }
+  # Huella de la raíz: se compara con la que imprime "sincronizar.py --obtener-ca" en docker01
+  certutil -ca.cert C:\paas\PAAS-AD-CA.cer | Out-Null
+  Write-Output "Raíz PAAS-AD-CA SHA256: $((Get-PfxCertificate C:\paas\PAAS-AD-CA.cer).GetCertHashString('SHA256'))"
+  Pasar-A 4
 }
 Stop-Transcript | Out-Null
-</powershell>
-<persist>true</persist>
