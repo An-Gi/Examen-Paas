@@ -6,7 +6,7 @@ Todos corren en `docker01` (10.10.10.30). Los puertos se publican **solo en esa 
 
 | # | Carpeta | Servicio (lista del enunciado) | Resp. | Prueba de demo | Estado |
 |---|---|---|---|---|---|
-| 1 | `01-dns-bind9` | DNS · BIND9 | A | `dig @10.10.10.30 web01.paas.internal +short` | ⬜ |
+| 1 | `01-dns-bind9` | DNS · BIND9 | A | `dig @10.10.10.30 web01.paas.internal +short` | 🟨 (probado en local; falta docker01) |
 | 2 | `02-ldap` | Linux Domain Controller · LDAP | A | `ldapsearch` + alta de usuario en phpLDAPadmin | ⬜ |
 | 3 | `03-email` | Email Server | A | Correo de usuario1 a usuario2 por Roundcube | ⬜ |
 | 4 | `04-owncloud` | OwnCloud | B | Login y subida de un archivo | ✅ |
