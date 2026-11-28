@@ -1,11 +1,14 @@
 # Estructura base del directorio — Estudiante A (Fase 3)
 # Se carga solo en el primer arranque (con volúmenes vacíos).
-# TODO(A): agregar 2 usuarios de prueba (posixAccount + inetOrgPerson) y un grupo.
+# Los usuarios y grupos NO se crean aquí: los copia el sincronizador desde el Active Directory
+# (marcados con employeeType / businessCategory = ad-sync). Lo que se cree a mano en estas OU no se toca.
 
 dn: ou=usuarios,dc=paas,dc=internal
 objectClass: organizationalUnit
 ou: usuarios
+description: Usuarios sincronizados desde Active Directory (ad.paas.internal)
 
 dn: ou=grupos,dc=paas,dc=internal
 objectClass: organizationalUnit
 ou: grupos
+description: Grupos sincronizados desde Active Directory (ad.paas.internal)

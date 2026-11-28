@@ -34,6 +34,14 @@ data "aws_vpc" "default" {
   default = true
 }
 
+# Subred por defecto de la zona "a": sin fijarla, AWS elige una zona al azar y la IP privada del AD
+# (ad.tf, host .50 de esta subred) cambiaría entre apply y apply. Con us-east-2a queda 172.31.0.50.
+data "aws_subnet" "vpn" {
+  vpc_id            = data.aws_vpc.default.id
+  availability_zone = "${var.region}a"
+  default_for_az    = true
+}
+
 # Firewall de la instancia. Es stateful: las respuestas salen solas, por eso basta con
 # declarar el ingreso que se permite.
 resource "aws_security_group" "vpn" {
@@ -96,6 +104,7 @@ resource "aws_instance" "vpn" {
   instance_type          = var.tipo_instancia
   key_name               = aws_key_pair.admin.key_name
   vpc_security_group_ids = [aws_security_group.vpn.id]
+  subnet_id              = data.aws_subnet.vpn.id
 
   # La instancia reenvía paquetes de los clientes VPN con su propia IP (MASQUERADE),
   # así que el source/dest check de AWS no estorba; se deja activo (valor por defecto).

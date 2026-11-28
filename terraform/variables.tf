@@ -54,3 +54,52 @@ variable "puerto_vpn_movil" {
   type        = number
   default     = 1195
 }
+
+# --- Active Directory (Fase 3, ad.tf) ----------------------------------------------
+
+variable "crear_ad" {
+  description = "Crea el Windows Domain Controller en EC2 (~USD 0,06/h). false = solo la VPN"
+  type        = bool
+  default     = false
+}
+
+variable "tipo_instancia_ad" {
+  description = "Tipo de EC2 del AD. Windows con escritorio necesita ~4 GB"
+  type        = string
+  default     = "t3.medium"
+}
+
+variable "ad_dominio" {
+  description = "Dominio de AD: subdominio de la zona interna para no chocar con el BIND de paas.internal"
+  type        = string
+  default     = "ad.paas.internal"
+}
+
+variable "ad_netbios" {
+  description = "Nombre NetBIOS del dominio (PAAS\\usuario)"
+  type        = string
+  default     = "PAAS"
+}
+
+# Contraseñas: solo en terraform.tfvars (ignorado por Git) y en el gestor de contraseñas.
+# Windows exige complejidad: >= 14 caracteres con mayúsculas, minúsculas y números.
+variable "ad_password_admin" {
+  description = "Administrator del dominio (y modo de restauración DSRM)"
+  type        = string
+  default     = ""
+  sensitive   = true
+}
+
+variable "ad_password_sync" {
+  description = "Cuenta svc-sync, que lee el AD desde docker01"
+  type        = string
+  default     = ""
+  sensitive   = true
+}
+
+variable "ad_password_usuarios" {
+  description = "Contraseña inicial de los usuarios de prueba (ana.mora, luis.vargas)"
+  type        = string
+  default     = ""
+  sensitive   = true
+}

@@ -16,3 +16,4 @@
 | 2026-11-26 | AWS cuenta nueva: MFA del usuario root y presupuesto de USD 5 con alertas | 0.5 | F0 |
 | 2026-11-26 | Dominio examenpaas.tech (GitHub Student Pack): name.com, quitar parking, prueba de registro A con dig | 2.0 | F0 |
 | 2026-11-26 | Prueba real de la VPN: terraform apply, make vpn x2, clientes laptop (TAP), web01 y teléfono (TUN), destroy | 1.0 | F2 |
+| 2026-11-28 | Email (docker-mailserver + Roundcube, TLS de la CA) y LDAP sincronizado con AD en EC2 (LDAPS, AD CS); pruebas | 3.5 | F3 |

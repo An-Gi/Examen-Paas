@@ -7,7 +7,7 @@ Todos corren en `docker01` (10.10.10.30). Los puertos se publican **solo en esa 
 | # | Carpeta | Servicio (lista del enunciado) | Resp. | Prueba de demo | Estado |
 |---|---|---|---|---|---|
 | 1 | `01-dns-bind9` | DNS · BIND9 | A | `dig @10.10.10.30 web01.paas.internal +short` | ⬜ |
-| 2 | `02-ldap` | Linux Domain Controller · LDAP | A | `ldapsearch` + alta de usuario en phpLDAPadmin | ⬜ |
+| 2 | `02-ldap` | Linux Domain Controller · LDAP, sincronizado con AD (EC2) | A | Usuario nuevo en el AD → aparece en OpenLDAP (`docker logs ldap_sincronizador`) | 🟨 probado contra el AD real; falta `docker01` |
 | 3 | `03-email` | Email Server | A | Correo de usuario1 a usuario2 por Roundcube | ⬜ |
 | 4 | `04-owncloud` | OwnCloud | B | Login y subida de un archivo | ✅ |
 | 5 | `05-ftp` | FileServer · FTP | B | `rclone mount` en otra VM (`probar-montajes.sh ftp`) | ✅ |

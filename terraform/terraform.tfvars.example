@@ -7,3 +7,11 @@ ruta_llave_publica = "~/.ssh/examen-paas.pub"
 # Tu IP pública: curl -s https://checkip.amazonaws.com
 # Si cambia (otra red, la universidad), actualizar y hacer terraform apply.
 cidr_admin = "0.0.0.0/32"
+
+# Active Directory (Fase 3): false = solo VPN. Encenderlo solo para pruebas y la defensa (~USD 0,06/h).
+crear_ad = false
+# Contraseñas reales en el gestor (>= 14 caracteres, mayúsculas, minúsculas y números):
+#   openssl rand -base64 24 | tr -dc 'A-Za-z0-9' | cut -c1-20
+ad_password_admin    = "cambiar"
+ad_password_sync     = "cambiar"
+ad_password_usuarios = "cambiar"
