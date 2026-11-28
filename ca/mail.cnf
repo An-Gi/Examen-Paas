@@ -1,0 +1,21 @@
+# CSR de mail (docker-mailserver en docker01) — Estudiante A (Fase 3), firma: Estudiante B
+# Lo usan IMAP (143/993), SMTP de envío (465/587) y Roundcube, que verifica el nombre contra el SAN.
+
+[ req ]
+default_bits       = 2048
+prompt             = no
+distinguished_name = dn
+req_extensions     = ext_req
+
+[ dn ]
+C  = CR
+O  = Examen PaaS II-2026
+CN = mail.paas.internal
+
+[ ext_req ]
+subjectAltName = @san
+
+[ san ]
+DNS.1 = mail.paas.internal
+DNS.2 = webmail.paas.internal
+IP.1  = 10.10.10.30
