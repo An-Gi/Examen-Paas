@@ -201,6 +201,34 @@ La instalación de WordPress (título del sitio y administrador) se terminó en 
 
 ### DNS (BIND9) — Estudiante A
 
+`docker/01-dns-bind9`: BIND 9.20 (`ubuntu/bind9:9.20-26.04`; la imagen de ISC solo tiene amd64, ADR-0002). Sirve la zona interna `paas.internal` en `10.10.10.30:53` (UDP y TCP).
+
+- **Zonas:**
+  - **Directa** `paas.internal` (`db.paas.internal`): nodos, servicios y el `MX 10 mail.paas.internal` que usa el Email.
+  - **Inversa** `10.10.10.in-addr.arpa` (`db.10.10.10`): un `PTR` por nodo.
+  - Los nombres salen de `docs/convenciones.md`. En cada cambio se sube el serial (`AAAAMMDDNN`).
+- **Recursión** solo para la LAN, la VPN y la red interna de Docker (`allow-recursion`). Lo demás se reenvía a `1.1.1.1` y `8.8.8.8`, con validación DNSSEC.
+- **Sin transferencias de zona** (`allow-transfer { none; }`). No hay servidor secundario, así que nadie necesita copiar la zona. Si se permitiera, cualquiera en la LAN o la VPN podría listar todos los nombres e IPs de la red con un `AXFR`.
+- **Solo en la IP de la LAN.** El puerto 53 se publica en `10.10.10.30`, no en `0.0.0.0`, porque `systemd-resolved` ya usa `127.0.0.53:53` en Ubuntu.
+- **Imagen sin shell.** `ubuntu/bind9` es una imagen *chiseled* (Ubuntu Rocks): no trae `sh` ni `dig`, así que el contenedor no tiene healthcheck y la configuración se valida antes de levantarlo:
+
+  ```bash
+  docker run --rm -v "$PWD/config:/etc/bind:ro" --entrypoint named-checkconf ubuntu/bind9:9.20-26.04 -z
+  ```
+
+**Pruebas (2026-11-28, Docker local en el Mac con `IP_DOCKER01=127.0.0.1`; falta repetirlas en `docker01`):**
+
+| Prueba | Resultado |
+|---|---|
+| `named-checkconf -z` | Las dos zonas cargan con el serial `2026112801` |
+| `dig @10.10.10.30 web01.paas.internal +short` | `10.10.10.20` (también por TCP) |
+| `dig @10.10.10.30 -x 10.10.10.20 +short` | `web01.paas.internal.` |
+| `dig @10.10.10.30 paas.internal MX +short` | `10 mail.paas.internal.` |
+| `dig @10.10.10.30 ftp.paas.internal +short` | `docker01.paas.internal.` → `10.10.10.30` (CNAME) |
+| `dig @10.10.10.30 example.com +short` | Resuelve por los reenviadores |
+| `dig @10.10.10.30 paas.internal AXFR` | `Transfer failed.` |
+| Reinicio del contenedor | Sigue respondiendo |
+
 ### LDAP (OpenLDAP) — Estudiante A
 
 ### Correo (docker-mailserver + Roundcube) — Estudiante A

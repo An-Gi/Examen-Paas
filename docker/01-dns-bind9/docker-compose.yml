@@ -2,10 +2,14 @@
 # Demo:  dig @10.10.10.30 web01.paas.internal +short     -> 10.10.10.20
 #        dig @10.10.10.30 -x 10.10.10.20 +short          -> web01.paas.internal.
 #        dig @10.10.10.30 paas.internal MX +short        -> 10 mail.paas.internal.
+#        dig @10.10.10.30 paas.internal AXFR             -> Transfer failed (allow-transfer { none; })
 # systemd-resolved ocupa 127.0.0.53:53 en Ubuntu: por eso se publica solo en la IP de la LAN.
+# Imagen de Canonical con arm64 (la de ISC solo tiene amd64, ADR-0002). Es "chiseled": no trae
+# shell ni dig, así que no hay healthcheck. Validar la configuración antes de levantar:
+#   docker run --rm -v "$PWD/config:/etc/bind:ro" --entrypoint named-checkconf ubuntu/bind9:9.20-26.04 -z
 services:
   bind9:
-    image: internetsystemsconsortium/bind9:9.20   # TODO(A): sin arm64 -> ubuntu/bind9:9.20-26.04 (ADR-0002)
+    image: ubuntu/bind9:9.20-26.04
     container_name: bind9
     restart: unless-stopped
     environment:

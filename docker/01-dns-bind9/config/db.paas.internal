@@ -2,7 +2,7 @@
 ; Incrementar el serial (AAAAMMDDNN) en CADA cambio.
 $TTL 300
 @   IN  SOA ns1.paas.internal. admin.paas.internal. (
-            2026112401 ; serial
+            2026112801 ; serial
             3600       ; refresh
             900        ; retry
             604800     ; expire
@@ -25,7 +25,7 @@ ldap        IN  CNAME  docker01
 mail        IN  A      10.10.10.30
 webmail     IN  CNAME  docker01
 cloud       IN  CNAME  docker01
+; FTP y SMB siguen en docker01 hasta que el FileServer pase a FreeBSD (ADR-0003, PR #10).
 ftp         IN  CNAME  docker01
 smb         IN  CNAME  docker01
-grafana     IN  CNAME  docker01
-kuma        IN  CNAME  docker01
+kuma        IN  CNAME  docker01   ; panel de apoyo, no se cuenta como servicio
