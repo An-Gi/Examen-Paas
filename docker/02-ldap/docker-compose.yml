@@ -1,6 +1,8 @@
 # Servicio 2/6 · Linux Domain Controller (LDAP) sincronizado con Active Directory — Responsable: Estudiante A (Fase 3)
 # El AD (Windows Server en EC2, terraform/ad.tf) es la fuente de verdad; "sincronizador" copia sus usuarios
 # y grupos a este OpenLDAP cada INTERVALO segundos (ADR-0004). docker01 llega al AD por la VPN (docker01.ovpn).
+# Primera vez (en docker01, con la VPN de docker01 arriba):
+#        ./compose.sh 02-ldap run --rm -u root sincronizador --obtener-ca   (guarda la raíz del AD en ad-ca/)
 # Demo:  1) RDP al AD -> "Usuarios y equipos de Active Directory" -> nuevo usuario en OU=Usuarios
 #        2) docker logs -f ldap_sincronizador          -> "alta uid=..."
 #        3) ldapsearch -x -H ldap://10.10.10.30 -b ou=usuarios,dc=paas,dc=internal uid
@@ -55,8 +57,14 @@ services:
     restart: unless-stopped
     depends_on:
       openldap: {condition: service_healthy}
+    # El certificado del DC es para dc01.ad.paas.internal: se resuelve a la IP del AD (por la VPN)
+    extra_hosts:
+      - "dc01.${AD_DOMINIO:-ad.paas.internal}:${AD_IP:-172.31.0.50}"
+    volumes:
+      - ./ad-ca:/ad-ca
     environment:
-      AD_URL: ${AD_URL:?definir en docker/.env (terraform output ad_ip_privada)}
+      AD_URL: ldaps://dc01.${AD_DOMINIO:-ad.paas.internal}
+      AD_CA: /ad-ca/ad-ca.crt
       AD_USUARIO: svc-sync@${AD_DOMINIO:-ad.paas.internal}
       AD_PASSWORD: ${AD_SYNC_PASSWORD:?definir en docker/.env (igual a ad_password_sync de terraform.tfvars)}
       AD_BASE: ${AD_BASE:-OU=Usuarios,DC=ad,DC=paas,DC=internal}

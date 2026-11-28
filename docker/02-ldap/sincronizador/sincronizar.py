@@ -12,7 +12,9 @@ este proceso los copia cada INTERVALO segundos al OpenLDAP de docker01 (ADR-0004
 - uidNumber = 10000 + RID (la última parte del SID): estable entre ejecuciones y único en el dominio.
 - Las contraseñas NO se copian: el AD nunca entrega sus hashes por LDAP (unicodePwd es de solo escritura).
 """
+import hashlib
 import os
+import ssl
 import sys
 import time
 
@@ -30,11 +32,11 @@ def env(nombre, defecto=None):
     return valor
 
 
-AD_URL = env("AD_URL")                       # ldaps://172.31.x.50 (por la VPN)
+AD_URL = env("AD_URL")                       # ldaps://dc01.ad.paas.internal (por la VPN)
 AD_USUARIO = env("AD_USUARIO")               # svc-sync@ad.paas.internal
 AD_PASSWORD = env("AD_PASSWORD")
 AD_BASE = env("AD_BASE")                     # OU=Usuarios,DC=ad,DC=paas,DC=internal
-AD_CA = os.environ.get("AD_CA", "")          # raíz de la CA del AD para verificar LDAPS
+AD_CA = env("AD_CA", "/ad-ca/ad-ca.crt")    # raíz de la CA del AD (PAAS-AD-CA) para verificar LDAPS
 LDAP_URL = env("LDAP_URL", "ldap://openldap:389")
 LDAP_ADMIN = env("LDAP_ADMIN")               # cn=admin,dc=paas,dc=internal
 LDAP_PASSWORD = env("LDAP_PASSWORD")
@@ -48,13 +50,34 @@ def log(mensaje):
     print(time.strftime("%Y-%m-%d %H:%M:%S"), mensaje, flush=True)
 
 
-def conectar_ad():
-    tls = None
-    if AD_URL.startswith("ldaps://") and AD_CA:
-        import ssl
-        tls = Tls(validate=ssl.CERT_REQUIRED, ca_certs_file=AD_CA)
-    return Connection(Server(AD_URL, tls=tls, connect_timeout=10), AD_USUARIO, AD_PASSWORD,
+def conectar_ad(verificar=True):
+    """LDAPS: Windows Server 2025 rechaza el bind simple sin TLS ni firma por el 389.
+
+    Con verificar=True se exige que el certificado del DC esté firmado por la raíz guardada en AD_CA
+    y que su nombre coincida con el de AD_URL (dc01.ad.paas.internal, no la IP).
+    """
+    tls = Tls(validate=ssl.CERT_REQUIRED, ca_certs_file=AD_CA) if verificar else Tls(validate=ssl.CERT_NONE)
+    return Connection(Server(AD_URL, use_ssl=True, tls=tls, connect_timeout=10), AD_USUARIO, AD_PASSWORD,
                       auto_bind=True, receive_timeout=30)
+
+
+def obtener_ca(destino):
+    """Primera vez (confianza en el primer uso): lee la raíz PAAS-AD-CA publicada en el AD y la guarda.
+
+    La conexión ya va cifrada, pero todavía sin verificar; por eso se imprime la huella SHA-256, que
+    debe coincidir con la que el AD dejó en C:\\paas\\bootstrap.log ("Raíz PAAS-AD-CA SHA256: ...").
+    """
+    with conectar_ad(verificar=False) as ad:
+        dominio = ",".join(p for p in AD_BASE.split(",") if p.upper().startswith("DC="))
+        ad.search(f"CN=Certification Authorities,CN=Public Key Services,CN=Services,CN=Configuration,{dominio}",
+                  "(objectClass=certificationAuthority)", SUBTREE, attributes=["cn", "cACertificate"])
+        if not ad.entries:
+            sys.exit("El AD todavía no publica su CA (etapa 3 del arranque sin terminar)")
+        der = ad.entries[0].cACertificate.raw_values[0]
+    with open(destino, "w") as f:
+        f.write(ssl.DER_cert_to_PEM_cert(der))
+    log(f"raíz {ad.entries[0].cn} guardada en {destino}")
+    log(f"SHA256: {hashlib.sha256(der).hexdigest().upper()}")
 
 
 def rid(sid_binario):
@@ -152,6 +175,9 @@ def sincronizar():
 
 
 if __name__ == "__main__":
+    if "--obtener-ca" in sys.argv:
+        obtener_ca(AD_CA)
+        sys.exit(0)
     una_vez = "--una-vez" in sys.argv
     while True:
         try:

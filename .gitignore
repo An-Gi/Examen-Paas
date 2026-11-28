@@ -43,6 +43,9 @@ crash.*.log
 
 # --- Datos de contenedores ------------------------------------------------------
 docker/03-email/dms/
+# Raíz de la CA del AD (la obtiene el sincronizador; cambia en cada instalación del AD)
+docker/02-ldap/ad-ca/*
+!docker/02-ldap/ad-ca/.gitkeep
 docker/extras/uptime-kuma/data/
 docker/90-respaldo-dhcp/data/*
 !docker/90-respaldo-dhcp/data/dhcpd.conf
