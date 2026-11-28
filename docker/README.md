@@ -36,7 +36,7 @@ cp .env.example .env               # contraseñas reales desde el gestor compart
 - **Fijar las versiones de las imágenes** (nada de `latest` en la defensa). Las marcadas con `TODO` se fijan en la Fase 3.
 - Datos en **volúmenes con nombre**, para que sobrevivan a un `down`/`up`.
 - Evitar NFS en contenedor: necesita módulos del kernel y modo privilegiado, y suele fallar.
-- El correo hacia Internet no funciona (el puerto 25 está bloqueado por ISPs y AWS): la demo es dentro de `paas.internal`.
+- El correo solo se entrega dentro de `paas.internal`: `03-email/postfix-main.cf` rebota cualquier destino externo. No se confía en que el ISP bloquee el puerto 25 (en la red de A no lo bloquea).
 
 ## Preparar docker01 (una vez, quien llegue primero)
 

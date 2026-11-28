@@ -3,7 +3,7 @@
 #        2) Roundcube http://webmail.paas.internal:8082: usuario1 envía, usuario2 recibe
 #        3) openssl s_client -connect mail.paas.internal:993 -CAfile ca.crt  -> "Verify return code: 0 (ok)"
 # Requiere: el MX de paas.internal en 01-dns-bind9 y el certificado de nuestra CA en tls/ (preparar-tls.sh).
-# El puerto 25 hacia Internet está bloqueado por ISPs y AWS: la demo es solo dentro del dominio.
+# Solo entrega dentro de paas.internal (postfix-main.cf): nunca envía correo a Internet.
 # Roundcube es auxiliar de este servicio: no cuenta aparte (pregunta #2).
 # Imágenes con arm64 y versión fija (ADR-0002).
 services:
@@ -33,8 +33,9 @@ services:
       ENABLE_OPENDMARC: 0
       ENABLE_POLICYD_SPF: 0
       ENABLE_FAIL2BAN: 0
-      # Roundcube llega por la red de Docker: se le permite enviar (sigue necesitando usuario y clave)
-      PERMIT_DOCKER: connected-networks
+      # Ninguna red es "de confianza": todo envío exige usuario y contraseña (Roundcube usa el 587
+      # autenticado). Con connected-networks, Postfix confiaba en 172.x/16 de Docker y era un relay abierto.
+      PERMIT_DOCKER: none
     ports:
       - "${IP_DOCKER01:-10.10.10.30}:25:25"     # SMTP entre servidores
       - "${IP_DOCKER01:-10.10.10.30}:143:143"   # IMAP con STARTTLS
@@ -44,6 +45,8 @@ services:
     volumes:
       # dms/config guarda las cuentas (hashes de contraseñas): ignorado por Git
       - ./dms/config:/tmp/docker-mailserver
+      # Bloquea la entrega a dominios externos (ver el archivo)
+      - ./postfix-main.cf:/tmp/docker-mailserver/postfix-main.cf:ro
       - ./tls:/tmp/dms/custom-certs:ro
       - mail_data:/var/mail
       - mail_state:/var/mail-state
