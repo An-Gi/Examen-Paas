@@ -205,6 +205,34 @@ La instalación de WordPress (título del sitio y administrador) se terminó en 
 
 ### Correo (docker-mailserver + Roundcube) — Estudiante A
 
+`docker/03-email`: docker-mailserver 16.0.1 (Postfix para SMTP y Dovecot para IMAP) y Roundcube 1.6.22 como correo web. Son dos contenedores, pero **un** servicio del enunciado (pregunta #2). Ambas imágenes tienen arm64 (ADR-0002).
+
+- **TLS con nuestra CA.** El certificado de `mail.paas.internal` (SAN: `mail`, `webmail` y `10.10.10.30`, en `ca/mail.cnf`) lo firma la CA de la §4 (`ca.sh csr mail` + `ca.sh firmar mail`, en el Mac de B). `preparar-tls.sh` comprueba la cadena y que el certificado corresponda a la llave, y lo copia a `03-email/tls/`; la llave nunca va a Git. Dovecot exige TLS: un inicio de sesión en texto plano por el 143 se rechaza.
+- **Roundcube verifica el certificado.** Se conecta a `tls://mail.paas.internal` (STARTTLS) por un alias de red de Compose, para que el nombre coincida con el SAN. PHP solo confía en las CA públicas, así que `roundcube/tls.inc.php` le agrega la raíz de nuestra CA (`cafile`). Sin ese archivo, la conexión se rechaza.
+- **Cuentas antes del primer arranque.** docker-mailserver no arranca Dovecot sin al menos una cuenta (espera 120 s y se apaga). `crear-cuentas.sh` crea `usuario1` y `usuario2` con un contenedor temporal (`compose run`) que solo escribe los hashes en `dms/config/`, y agrega el alias obligatorio `postmaster@`. Las contraseñas salen de `docker/.env` y no se imprimen.
+- **Sin suplantación.** `SPOOF_PROTECTION=1`: un usuario autenticado solo puede enviar como su propia dirección.
+- **Sin relay abierto.** `PERMIT_DOCKER=none`: ninguna red es "de confianza" para Postfix, así que todo envío a otro dominio exige usuario y contraseña. Roundcube también envía autenticado, por el 587. La primera versión usaba `connected-networks`, que agrega la red de Docker (`172.x/16`) a `mynetworks`. En la prueba local resultó un **relay abierto**: las conexiones publicadas llegaban desde la puerta de enlace de Docker y Postfix las aceptaba sin contraseña.
+- **Solo entrega dentro de `paas.internal`.** `postfix-main.cf` pone `default_transport = error:…`: un correo a cualquier dominio externo se rebota en el acto, sin conectarse a Internet. No se puede contar con que el puerto 25 de salida esté bloqueado: en la red de A no lo estaba, y durante la prueba del relay abierto un aviso de no entrega llegó al servidor real de un dominio externo (2026-11-28).
+- **Filtros apagados** (ClamAV, SpamAssassin, Rspamd, Amavis, DKIM, DMARC, SPF, Postgrey, Fail2ban). El correo no entra ni sale de Internet, y `docker01` tiene ~3,5 GB para todos los servicios: solo ClamAV usaría ~1 GB. Así, el servicio completo usa **~95 MB**.
+- **Datos en volúmenes con nombre** (`mail_data`, `mail_state`, `roundcube_data`), y las cuentas en `dms/config/` (ignorado por Git).
+
+**Pruebas (2026-11-28, Docker local en el Mac con `IP_DOCKER01=127.0.0.1` y una CA de prueba desechable; falta repetirlas en `docker01` con el certificado firmado por la CA real):**
+
+| Prueba | Resultado |
+|---|---|
+| `openssl s_client -connect …:993 -verify_hostname mail.paas.internal -CAfile ca.crt` | `Verify return code: 0 (ok)` (igual en el 587 con `-starttls smtp`) |
+| `usuario1` envía a `usuario2` por SMTP 587 (STARTTLS + autenticación) | Aceptado |
+| `usuario2` lee su buzón por IMAPS 993 | Llega `From: usuario1@paas.internal`, `Subject: Prueba F3` |
+| Inicio de sesión IMAP en el 143 **sin** TLS | `Login denied` |
+| `usuario1` envía con remitente `usuario2@…` | `553` (rechazado por `SPOOF_PROTECTION`) |
+| Contraseña incorrecta (IMAP y Roundcube) | `Login denied` / `401` |
+| Roundcube: inicio de sesión como `usuario2` (sin `@paas.internal`) | `302` a la bandeja; aparece "Prueba F3" |
+| Roundcube: `usuario1` envía a `usuario2` | Llega "Desde Roundcube"; el log muestra `sasl_username=usuario1@paas.internal` |
+| Envío por el 25 **sin** autenticación hacia `@gmail.com` | `554 Relay access denied` |
+| `usuario1` autenticado envía a `@example.com` | Rebotado al instante (`relay=none`, "solo entrega dentro de paas.internal"); la cola queda vacía |
+| PHP en el contenedor de Roundcube, sin y con la CA del examen | "certificado no confiable" / "conexión verificada" |
+| `docker compose down` + `up` | Arranca *healthy* en ~7 s; el correo y las cuentas siguen ahí |
+
 ### Preparación de docker01 (común a A y B)
 
 1. **Estabilidad y Docker.**

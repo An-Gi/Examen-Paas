@@ -8,7 +8,7 @@ Todos corren en `docker01` (10.10.10.30). Los puertos se publican **solo en esa 
 |---|---|---|---|---|---|
 | 1 | `01-dns-bind9` | DNS · BIND9 | A | `dig @10.10.10.30 web01.paas.internal +short` | ⬜ |
 | 2 | `02-ldap` | Linux Domain Controller · LDAP | A | `ldapsearch` + alta de usuario en phpLDAPadmin | ⬜ |
-| 3 | `03-email` | Email Server | A | Correo de usuario1 a usuario2 por Roundcube | ⬜ |
+| 3 | `03-email` | Email Server | A | Correo de usuario1 a usuario2 por Roundcube | 🟨 probado en Docker local; falta `docker01` |
 | 4 | `04-owncloud` | OwnCloud | B | Login y subida de un archivo | ✅ |
 | 5 | `05-ftp` | FileServer · FTP | B | `rclone mount` en otra VM (`probar-montajes.sh ftp`) | ✅ |
 | 6 | `06-smb` | FileServer · SMB | B | `mount -t cifs` en otra VM (`probar-montajes.sh smb`) | ✅ |
@@ -36,7 +36,7 @@ cp .env.example .env               # contraseñas reales desde el gestor compart
 - **Fijar las versiones de las imágenes** (nada de `latest` en la defensa). Las marcadas con `TODO` se fijan en la Fase 3.
 - Datos en **volúmenes con nombre**, para que sobrevivan a un `down`/`up`.
 - Evitar NFS en contenedor: necesita módulos del kernel y modo privilegiado, y suele fallar.
-- El correo hacia Internet no funciona (el puerto 25 está bloqueado por ISPs y AWS): la demo es dentro de `paas.internal`.
+- El correo solo se entrega dentro de `paas.internal`: `03-email/postfix-main.cf` rebota cualquier destino externo. No se confía en que el ISP bloquee el puerto 25 (en la red de A no lo bloquea).
 
 ## Preparar docker01 (una vez, quien llegue primero)
 
@@ -49,6 +49,9 @@ sudo bash ~/paas/docker/instalar-docker.sh      # Docker oficial + Compose; zekk
 bash ~/paas/docker/generar-env.sh               # .env con contraseñas aleatorias -> pasarlas al gestor
 ./compose.sh 04-owncloud up -d                  # y así cada servicio
 bash 05-ftp/crear-usuario.sh                    # usuario virtual de FTP, después del up de 05-ftp
+bash 03-email/crear-cuentas.sh                  # cuentas de correo, ANTES del up de 03-email
+# El certificado del correo lo firma B en su Mac antes del desplegar.sh:
+#   bash ca/scripts/ca.sh csr mail && bash ca/scripts/ca.sh firmar mail && bash docker/03-email/preparar-tls.sh
 ```
 
 Prueba de montajes desde otra VM: `bash docker/desplegar.sh web01` y, en `web01`, `sudo bash ~/paas/docker/probar-montajes.sh todos`.

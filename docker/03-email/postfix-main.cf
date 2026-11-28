@@ -1,0 +1,5 @@
+# Ajustes de Postfix que docker-mailserver agrega a main.cf — Estudiante A (Fase 3)
+# Solo se entrega dentro de paas.internal: cualquier destino externo se rebota en el acto, sin
+# intentar conectarse a Internet. El puerto 25 de salida NO siempre está bloqueado (en una red
+# residencial puede estar abierto), y un servidor de examen no debe enviar correo a terceros.
+default_transport = error:5.7.1 Este servidor solo entrega correo dentro de paas.internal

@@ -43,6 +43,9 @@ crash.*.log
 
 # --- Datos de contenedores ------------------------------------------------------
 docker/03-email/dms/
+# Certificado del correo: lo copia preparar-tls.sh desde ca/ (la llave nunca va a Git)
+docker/03-email/tls/*
+!docker/03-email/tls/.gitkeep
 docker/extras/uptime-kuma/data/
 docker/90-respaldo-dhcp/data/*
 !docker/90-respaldo-dhcp/data/dhcpd.conf

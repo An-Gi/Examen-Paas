@@ -75,7 +75,7 @@ Las secciones §1 (Introducción), §7 (Lecciones aprendidas) y §8 (Bibliograf�
 | `web01.ovpn` con IP fija 10.8.0.20 | A → B | Fin de F2 | B lo instala en `web01` con `pull-filter ignore redirect-gateway` |
 | WordPress que acepte `cms.examenpaas.tech` | B → A | Antes de F5 | `WP_HOME` dinámico (ver `nativo/README.md`) |
 | Nombres DNS de la LAN | B → A | F3 | `www`, `cms-k8s`, `cloud`, `ftp`, `smb` ya están en la zona; avisar si hay nuevos |
-| Certificados de la CA para Email/LDAP | B → A | Opcional, F3 | `ca/scripts/ca.sh csr mail` + `firmar mail` |
+| Certificado de la CA para el Email | B → A | F3 (**necesario**: Dovecot exige TLS) | `ca.sh csr mail` + `ca.sh firmar mail` con `ca/mail.cnf`, y `docker/03-email/preparar-tls.sh` antes de `desplegar.sh` |
 | NS de `examenpaas.tech` delegados a la EC2 | A → B | F5 | B ya no edita registros en name.com: `cms` vive en la zona de BIND de la EC2 |
 | Puertos en `docker01` | A ↔ B | F3 | Tabla en `convenciones.md`; nadie publica un puerto que no esté ahí |
 | IPs y dominios | A ↔ B | Siempre | `convenciones.md` es la fuente única |

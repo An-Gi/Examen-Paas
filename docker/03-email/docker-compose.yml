@@ -1,51 +1,90 @@
 # Servicio 3/6 · Email Server (docker-mailserver + Roundcube) — Responsable: Estudiante A (Fase 3)
-# Demo:  1) docker exec -it mailserver setup email add usuario1@paas.internal
-#           docker exec -it mailserver setup email add usuario2@paas.internal
+# Demo:  1) bash 03-email/crear-cuentas.sh && ./compose.sh 03-email up -d   (cuentas ANTES del up)
 #        2) Roundcube http://webmail.paas.internal:8082: usuario1 envía, usuario2 recibe
-# Requiere el MX de paas.internal en 01-dns-bind9. El puerto 25 hacia Internet está bloqueado
-# por ISPs y AWS: la demo es solo dentro del dominio.
+#        3) openssl s_client -connect mail.paas.internal:993 -CAfile ca.crt  -> "Verify return code: 0 (ok)"
+# Requiere: el MX de paas.internal en 01-dns-bind9 y el certificado de nuestra CA en tls/ (preparar-tls.sh).
+# Solo entrega dentro de paas.internal (postfix-main.cf): nunca envía correo a Internet.
+# Roundcube es auxiliar de este servicio: no cuenta aparte (pregunta #2).
+# Imágenes con arm64 y versión fija (ADR-0002).
 services:
   mailserver:
-    image: ghcr.io/docker-mailserver/docker-mailserver:15   # TODO(A): confirmar la versión estable
+    image: mailserver/docker-mailserver:16.0.1
     container_name: mailserver
     hostname: mail.${DOMINIO_LAN:-paas.internal}
     restart: unless-stopped
     environment:
       TZ: ${TZ:-America/Costa_Rica}
+      POSTMASTER_ADDRESS: postmaster@${DOMINIO_LAN:-paas.internal}
+      # TLS con el certificado de mail.paas.internal firmado por nuestra CA (ca/mail.cnf).
+      # Sin TLS, las contraseñas viajarían en texto plano por IMAP y SMTP.
+      SSL_TYPE: manual
+      SSL_CERT_PATH: /tmp/dms/custom-certs/mail.crt
+      SSL_KEY_PATH: /tmp/dms/custom-certs/mail.key
+      # Solo un usuario autenticado puede enviar como su propia dirección (no como otra cuenta)
+      SPOOF_PROTECTION: 1
+      # Filtros desactivados: el correo nunca sale ni entra de Internet y docker01 tiene ~3,5 GB
+      # para todos los servicios (ClamAV solo ya usa ~1 GB). DKIM/DMARC/SPF validan correo externo.
       ENABLE_RSPAMD: 0
+      ENABLE_AMAVIS: 0
       ENABLE_CLAMAV: 0
+      ENABLE_SPAMASSASSIN: 0
+      ENABLE_POSTGREY: 0
+      ENABLE_OPENDKIM: 0
+      ENABLE_OPENDMARC: 0
+      ENABLE_POLICYD_SPF: 0
       ENABLE_FAIL2BAN: 0
-      PERMIT_DOCKER: network
-      # TODO(A): SSL_TYPE=manual con un certificado de nuestra CA (pedírselo a B: ca.sh csr mail)
-      #          Sin TLS, revisar cómo se comporta la autenticación en texto plano de Roundcube.
-      SSL_TYPE: ""
+      # Ninguna red es "de confianza": todo envío exige usuario y contraseña (Roundcube usa el 587
+      # autenticado). Con connected-networks, Postfix confiaba en 172.x/16 de Docker y era un relay abierto.
+      PERMIT_DOCKER: none
     ports:
-      - "${IP_DOCKER01:-10.10.10.30}:25:25"
-      - "${IP_DOCKER01:-10.10.10.30}:143:143"
-      - "${IP_DOCKER01:-10.10.10.30}:465:465"
-      - "${IP_DOCKER01:-10.10.10.30}:587:587"
-      - "${IP_DOCKER01:-10.10.10.30}:993:993"
+      - "${IP_DOCKER01:-10.10.10.30}:25:25"     # SMTP entre servidores
+      - "${IP_DOCKER01:-10.10.10.30}:143:143"   # IMAP con STARTTLS
+      - "${IP_DOCKER01:-10.10.10.30}:465:465"   # SMTP de envío con TLS implícito
+      - "${IP_DOCKER01:-10.10.10.30}:587:587"   # SMTP de envío con STARTTLS
+      - "${IP_DOCKER01:-10.10.10.30}:993:993"   # IMAP con TLS implícito
     volumes:
-      # dms/config guarda las cuentas (hashes): ignorado por Git
+      # dms/config guarda las cuentas (hashes de contraseñas): ignorado por Git
       - ./dms/config:/tmp/docker-mailserver
+      # Bloquea la entrega a dominios externos (ver el archivo)
+      - ./postfix-main.cf:/tmp/docker-mailserver/postfix-main.cf:ro
+      - ./tls:/tmp/dms/custom-certs:ro
       - mail_data:/var/mail
       - mail_state:/var/mail-state
       - mail_logs:/var/log/mail
+    networks:
+      default:
+        # Roundcube se conecta por este nombre: debe coincidir con el SAN del certificado
+        aliases: ["mail.${DOMINIO_LAN:-paas.internal}"]
+    healthcheck:
+      test: ["CMD-SHELL", "ss --listening --tcp | grep -qP 'LISTEN.+:smtp' || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 5
+      start_period: 60s
 
   roundcube:
-    image: roundcube/roundcubemail:latest   # TODO(A): fijar versión
+    image: roundcube/roundcubemail:1.6.22-apache   # rama LTS 1.6
     container_name: roundcube
     restart: unless-stopped
-    depends_on: [mailserver]
+    depends_on:
+      mailserver: {condition: service_healthy}
     environment:
-      ROUNDCUBEMAIL_DEFAULT_HOST: mailserver
+      TZ: ${TZ:-America/Costa_Rica}
+      # tls:// = STARTTLS. Se usa el nombre del certificado, no "mailserver", para que la verificación pase
+      ROUNDCUBEMAIL_DEFAULT_HOST: tls://mail.${DOMINIO_LAN:-paas.internal}
       ROUNDCUBEMAIL_DEFAULT_PORT: 143
-      ROUNDCUBEMAIL_SMTP_SERVER: mailserver
+      ROUNDCUBEMAIL_SMTP_SERVER: tls://mail.${DOMINIO_LAN:-paas.internal}
       ROUNDCUBEMAIL_SMTP_PORT: 587
+      # Permite entrar como "usuario1" sin escribir @paas.internal
+      ROUNDCUBEMAIL_USERNAME_DOMAIN: ${DOMINIO_LAN:-paas.internal}
+      ROUNDCUBEMAIL_DB_TYPE: sqlite
     ports:
       - "${IP_DOCKER01:-10.10.10.30}:8082:80"
     volumes:
       - roundcube_data:/var/roundcube/db
+      # Confía en la raíz de nuestra CA al conectarse a IMAP y SMTP (ver roundcube/tls.inc.php)
+      - ./roundcube/tls.inc.php:/var/roundcube/config/tls.inc.php:ro
+      - ./tls/ca.crt:/etc/ssl/paas/ca.crt:ro
 
 volumes:
   mail_data:
