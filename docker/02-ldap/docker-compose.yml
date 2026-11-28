@@ -1,13 +1,19 @@
-# Servicio 2/6 · LDAP (Linux Domain Controller) — Responsable: Estudiante A (Fase 3)
-# Demo:  ldapsearch -x -H ldap://10.10.10.30 -b dc=paas,dc=internal
-#        Alta de un usuario en phpLDAPadmin: http://ldap.paas.internal:8081
-#        (login: cn=admin,dc=paas,dc=internal)
-# Nota: las imágenes osixia ya no reciben mantenimiento activo, pero siguen siendo las más documentadas.
-#       TODO(A): evaluar una alternativa mantenida y registrar la decisión como ADR.
+# Servicio 2/6 · Linux Domain Controller (LDAP) sincronizado con Active Directory — Responsable: Estudiante A (Fase 3)
+# El AD (Windows Server en EC2, terraform/ad.tf) es la fuente de verdad; "sincronizador" copia sus usuarios
+# y grupos a este OpenLDAP cada INTERVALO segundos (ADR-0004). docker01 llega al AD por la VPN (docker01.ovpn).
+# Demo:  1) RDP al AD -> "Usuarios y equipos de Active Directory" -> nuevo usuario en OU=Usuarios
+#        2) docker logs -f ldap_sincronizador          -> "alta uid=..."
+#        3) ldapsearch -x -H ldap://10.10.10.30 -b ou=usuarios,dc=paas,dc=internal uid
+#           o phpLDAPadmin http://ldap.paas.internal:8081 (login: cn=admin,dc=paas,dc=internal)
+# phpLDAPadmin y el sincronizador son auxiliares de este servicio: no cuentan aparte (pregunta #2).
+# Imágenes con arm64 y versión fija (ADR-0002).
 services:
   openldap:
+    # 1.5.0 = OpenLDAP 2.4 (sin soporte upstream). La línea 2.6 de osixia rompe la configuración
+    # (variables, puertos y bootstrap nuevos) y salió en nov. 2026: se prefiere la conocida para la defensa.
     image: osixia/openldap:1.5.0
     container_name: openldap
+    hostname: ldap.${DOMINIO_LAN:-paas.internal}
     restart: unless-stopped
     # --copy-service: permite cargar los LDIF de ./ldif en el primer arranque
     command: --copy-service
@@ -15,24 +21,51 @@ services:
       LDAP_ORGANISATION: "Examen PaaS"
       LDAP_DOMAIN: ${DOMINIO_LAN:-paas.internal}
       LDAP_ADMIN_PASSWORD: ${LDAP_ADMIN_PASSWORD:?definir en docker/.env}
-      LDAP_TLS: "false"            # TODO(A): opcional, TLS con un certificado de nuestra CA
+      LDAP_TLS: "false"
+      TZ: ${TZ:-America/Costa_Rica}
     ports:
       - "${IP_DOCKER01:-10.10.10.30}:389:389"
     volumes:
       - ldap_data:/var/lib/ldap
       - ldap_config:/etc/ldap/slapd.d
       - ./ldif:/container/service/slapd/assets/config/bootstrap/ldif/custom:ro
+    healthcheck:
+      test: ["CMD-SHELL", "ldapsearch -x -H ldap://localhost -b '' -s base namingContexts >/dev/null"]
+      interval: 15s
+      timeout: 5s
+      retries: 10
+      start_period: 20s
 
   phpldapadmin:
     image: osixia/phpldapadmin:0.9.0
     container_name: phpldapadmin
     restart: unless-stopped
-    depends_on: [openldap]
+    depends_on:
+      openldap: {condition: service_healthy}
     environment:
       PHPLDAPADMIN_LDAP_HOSTS: openldap
       PHPLDAPADMIN_HTTPS: "false"
     ports:
       - "${IP_DOCKER01:-10.10.10.30}:8081:80"
+
+  sincronizador:
+    build: ./sincronizador
+    image: paas/ldap-sincronizador:1
+    container_name: ldap_sincronizador
+    restart: unless-stopped
+    depends_on:
+      openldap: {condition: service_healthy}
+    environment:
+      AD_URL: ${AD_URL:?definir en docker/.env (terraform output ad_ip_privada)}
+      AD_USUARIO: svc-sync@${AD_DOMINIO:-ad.paas.internal}
+      AD_PASSWORD: ${AD_SYNC_PASSWORD:?definir en docker/.env (igual a ad_password_sync de terraform.tfvars)}
+      AD_BASE: ${AD_BASE:-OU=Usuarios,DC=ad,DC=paas,DC=internal}
+      LDAP_URL: ldap://openldap:389
+      LDAP_ADMIN: cn=admin,dc=paas,dc=internal
+      LDAP_PASSWORD: ${LDAP_ADMIN_PASSWORD:?definir en docker/.env}
+      LDAP_BASE: dc=paas,dc=internal
+      INTERVALO: ${AD_SYNC_INTERVALO:-120}
+      TZ: ${TZ:-America/Costa_Rica}
 
 volumes:
   ldap_data:
