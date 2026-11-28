@@ -201,7 +201,40 @@ La instalación de WordPress (título del sitio y administrador) se terminó en 
 
 ### DNS (BIND9) — Estudiante A
 
-### LDAP (OpenLDAP) — Estudiante A
+### LDAP (OpenLDAP) sincronizado con Active Directory — Estudiante A
+
+`docker/02-ldap` + `terraform/ad.tf` ([ADR-0004](decisiones/0004-active-directory-ec2-sincronizacion.md)). El enunciado pide que el Linux Domain Controller se sincronice con Active Directory, y el profesor lo hizo obligatorio (C3, ADR-0003).
+
+- **Windows Domain Controller en EC2.** No existe Windows Server para ARM64, así que corre en una t3.medium (Windows Server 2025 con escritorio) **sin IP pública**: solo acepta tráfico del servidor VPN. Terraform la crea con `crear_ad = true` (~USD 0,06/h) y un script de cuatro etapas la deja lista sin intervención:
+  1. Contraseña de Administrator y nombre `dc01`.
+  2. Bosque `ad.paas.internal` (NetBIOS `PAAS`) con DNS integrado.
+  3. `OU=Usuarios`, grupo `Estudiantes`, `ana.mora`, `luis.vargas` y la cuenta de solo lectura `svc-sync`.
+  4. CA empresarial `PAAS-AD-CA` (AD CS), que le emite al DC su certificado para LDAPS.
+- **`docker01` llega al AD por la VPN** (`docker01.ovpn`, IP fija `10.8.0.30`). Ignora el `redirect-gateway` y solo enruta `172.31.0.0/16` por el túnel. El AD tiene siempre la IP `172.31.0.50`, porque la subred está fijada en `us-east-2a`.
+- **OpenLDAP 2.4** (`osixia/openldap:1.5.0`, arm64) con `ou=usuarios` y `ou=grupos`, y **phpLDAPadmin** en el 8081.
+- **Sincronizador propio** (`sincronizador/sincronizar.py`, Python + `ldap3`, ~150 líneas), que corre como tercer contenedor cada 120 s:
+  - lee por **LDAPS verificado** los usuarios activos y los grupos de `OU=Usuarios`;
+  - aplica altas, cambios y bajas en OpenLDAP, y solo toca las entradas con la marca `ad-sync`;
+  - asigna `uidNumber` = 10000 + RID del SID.
+- **¿Por qué LDAPS?** Windows Server 2025 rechaza el *bind* simple sin firma ni TLS por el 389 (`Strong(er) authentication required`). En lugar de apagar esa protección, se instaló AD CS. La raíz se obtiene una vez con `--obtener-ca` (confianza en el primer uso) y desde entonces cada conexión verifica el certificado y el nombre `dc01.ad.paas.internal`.
+- **Las contraseñas no se copian**: el AD nunca entrega sus hashes por LDAP. Es una limitación documentada (ver ADR-0004).
+
+**Puesta en marcha en `docker01`:** `crear_ad = true` + `make tf-apply` + `make vpn`. Después se instala `docker01.ovpn`, se definen `AD_SYNC_PASSWORD` y `AD_IP` en `.env` y se ejecuta `./compose.sh 02-ldap run --rm -u root sincronizador --obtener-ca` seguido de `./compose.sh 02-ldap up -d`.
+
+**Pruebas (2026-11-28, AD real en EC2; OpenLDAP en Docker local del Mac, con un contenedor Linux como cliente VPN `docker01`):**
+
+| Prueba | Resultado |
+|---|---|
+| Bind simple de `svc-sync` por el 389 | `Strong(er) authentication required` (por eso LDAPS) |
+| `openssl s_client -connect 172.31.0.50:636` | Certificado `CN=dc01.ad.paas.internal`, emisor `PAAS-AD-CA` |
+| `--obtener-ca` | Raíz guardada; huella SHA-256 `D4A4FC22…6370` |
+| Primera sincronización | Alta de `ana.mora`, `luis.vargas` y `Estudiantes` (2 miembros); `uidNumber` 11105 y 11106 |
+| En el AD: alta de `carla.rojas`, apellido de `ana.mora`, `luis.vargas` deshabilitado | Alta, cambio (`sn`, `cn`), baja y cambio de `member` en el grupo |
+| Segunda ejecución | 0 altas, 0 cambios, 0 bajas (idempotente) |
+| `uid=local.prueba` creado a mano en OpenLDAP | Intacto (no tiene la marca) |
+| Sincronizador con las CA públicas en vez de `PAAS-AD-CA` | `CERTIFICATE_VERIFY_FAILED` |
+| Modo continuo | Una sincronización cada `AD_SYNC_INTERVALO` segundos |
+| Memoria | OpenLDAP ~44 MB, phpLDAPadmin ~95 MB, sincronizador ~28 MB |
 
 ### Correo (docker-mailserver + Roundcube) — Estudiante A
 
